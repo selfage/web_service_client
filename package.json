@@ -1,0 +1,31 @@
+{
+  "name": "@selfage/web_service_client",
+  "version": "0.0.1",
+  "description": "Http-based client library for web pages.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/selfage/web_service_client.git"
+  },
+  "keywords": [
+    "Web",
+    "Http",
+    "Client"
+  ],
+  "author": "Yuxuan Xie <teststaybaka@gmail.com> (http://www.yuxuanxie.com)",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/selfage/web_service_client/issues"
+  },
+  "homepage": "https://github.com/selfage/web_service_client#readme",
+  "main": "./web_service_client.js",
+  "types": "./web_service_client.d.ts",
+  "devDependencies": {
+    "@selfage/tsconfig": "^1.0.3",
+    "typescript": "^4.1.3"
+  },
+  "dependencies": {
+    "@jsdevtools/ono": "^7.1.3",
+    "@selfage/message": "^1.0.3",
+    "@selfage/service_descriptor": "^1.0.2"
+  }
+}
