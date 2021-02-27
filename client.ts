@@ -1,6 +1,6 @@
-import ono from "@jsdevtools/ono";
 import { LocalSessionStorage } from "./local_session_storage";
 import { SessionStorage } from "./session_storage";
+import { HttpError, StatusCode } from "@selfage/http_error";
 import { parseMessage } from "@selfage/message/parser";
 import {
   AuthedServiceDescriptor,
@@ -10,14 +10,21 @@ import {
 } from "@selfage/service_descriptor";
 
 export class ServiceClient {
-  public hostName: string;
-  public onUnauthed: () => Promise<void> | void;
-  public onError: (errorMessage: string) => Promise<void> | void;
+  // Everything before the path of a URL, without the trailing slash (/).
+  public hostUrl: string;
+  // Callback when server finished response with an unauthenticated error, i.e.,
+  // 401 Unauthorized error.
+  public onUnauthenticated: () => Promise<void> | void;
+  // Callback when server finished response with an error.
+  public onHttpError: (error: HttpError) => Promise<void> | void;
 
-  public constructor(private sessionStorage: SessionStorage) {}
+  public constructor(
+    private sessionStorage: SessionStorage,
+    private fetch: (input: RequestInfo, init?: RequestInit) => Promise<Response>
+  ) {}
 
   public static createWithLocalStorage(): ServiceClient {
-    return new ServiceClient(new LocalSessionStorage());
+    return new ServiceClient(new LocalSessionStorage(), window.fetch);
   }
 
   public async fetchUnauthed<ServiceRequest, ServiceResponse>(
@@ -27,7 +34,7 @@ export class ServiceClient {
       ServiceResponse
     >
   ): Promise<ServiceResponse> {
-    return await this.fetch(request, serviceDescriptor);
+    return await this.fetchService(request, serviceDescriptor);
   }
 
   public async fetchAuthed<ServiceRequest extends WithSession, ServiceResponse>(
@@ -35,16 +42,20 @@ export class ServiceClient {
     serviceDescriptor: AuthedServiceDescriptor<ServiceRequest, ServiceResponse>
   ): Promise<ServiceResponse> {
     request.signedSession = await this.sessionStorage.read();
-    return await this.fetch(request, serviceDescriptor, this.onUnauthed);
+    return await this.fetchService(
+      request,
+      serviceDescriptor,
+      this.onUnauthenticated
+    );
   }
 
-  private async fetch<ServiceRequest, ServiceResponse>(
+  private async fetchService<ServiceRequest, ServiceResponse>(
     request: ServiceRequest,
     serviceDescriptor: ServiceDescriptor<ServiceRequest, ServiceResponse>,
-    onUnauthed?: () => Promise<void> | void
+    onUnauthenticated?: () => Promise<void> | void
   ): Promise<ServiceResponse> {
-    let response = await fetch(
-      `${this.hostName}${serviceDescriptor.path}`,
+    let response = await this.fetch(
+      `${this.hostUrl}${serviceDescriptor.path}`,
       {
         method: "POST",
         body: JSON.stringify(request),
@@ -55,15 +66,15 @@ export class ServiceClient {
     );
     if (!response.ok) {
       let errorMessage = await response.text();
-      let error = ono({status: response.status}, errorMessage);
-      if (response.status === 401) {
+      let error = new HttpError(response.status, errorMessage);
+      if (response.status === StatusCode.Unauthorized) {
         await this.sessionStorage.clear();
-        if (onUnauthed) {
-          onUnauthed();
+        if (onUnauthenticated) {
+          onUnauthenticated();
         }
       }
-      if (this.onError) {
-        this.onError(error.message);
+      if (this.onHttpError) {
+        this.onHttpError(error);
       }
       throw error;
     }

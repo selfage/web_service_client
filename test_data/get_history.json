@@ -1,0 +1,28 @@
+[{
+  "message": {
+    "name": "GetHistoryRequest",
+    "fields": [{
+      "name": "signedSession",
+      "type": "string"
+    }, {
+      "name": "page",
+      "type": "number"
+    }]
+  }
+}, {
+  "message": {
+    "name": "GetHistoryResponse",
+    "fields": [{
+      "name": "videos",
+      "type": "string",
+      "isArray": true
+    }]
+  }
+}, {
+  "service": {
+    "name": "GetHistory",
+    "path": "/get_history",
+    "request": "GetHistoryRequest",
+    "response": "GetHistoryResponse"
+  }
+}]
