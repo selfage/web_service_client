@@ -1,6 +1,6 @@
 {
   "name": "@selfage/service_client",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Http-based client to call services.",
   "repository": {
     "type": "git",
