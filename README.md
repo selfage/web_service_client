@@ -73,7 +73,7 @@ You don't need to explicitly set `signedSession` field. `ServiceClient` will set
 
 ## Catch errors
 
-You can handle all kinds of errors for each service call using try-catch statement, including network connection errors, which are thrown by `fetch` API, and server responded errors which are thrown by `ServiceClient`.
+You can handle all kinds of errors for each service call using try-catch statement, including network connection errors which are thrown by injected `fetch` function, and server responded errors which are thrown by `ServiceClient` as `HttpError`.
 
 ```TypeScript
 async function run() {
@@ -90,7 +90,7 @@ async function run() {
 
 `ServiceClient` will construct an `HttpError` whenever server finishes response without ok status, typically with 4xx or 5xx error code. See `@selfage/http_error` for more explanation of `HttpError`.
 
-In addition to the try-catch statement above, you can also add a listener to it, which can serve as a global handler of `HttpError` especially when `ServiceClient` is instantiated as a global singleton.
+In addition to the try-catch statement above, you can also add a listener to it, which can serve as a global handler of `HttpError` especially when `ServiceClient` is instantiated as a singleton.
 
 ```TypeScript
 // Suppose we created a `ServiceClient`.
@@ -103,7 +103,7 @@ client.onHttpError = (httpError /* HttpError */) =>  {
 
 When server finishes response with 401 error code, i.e., Unauthorized, `ServiceClient` treats it as an unauthenticated error by calling `clear()` on `SessionStorage`.
 
-In addition to the try-catch statement above, you can also add a listener to it, which can serve as a global handler of `HttpError` especially when `ServiceClient` is instantiated as a global singleton.
+In addition to the try-catch statement above, you can also add a listener to it, which can serve as a global handler of `HttpError` especially when `ServiceClient` is instantiated as a singleton.
 
 ```TypeScript
 // Suppose we created a `ServiceClient`.
@@ -115,4 +115,29 @@ client.onUnauthenticated = (/* No args */) =>  {
 It's often confused about unauthenticated and unauthorized error, especially because standard Http error codes did confuse them. Unauthenticated means the user cannot be identified, e.g., because of wrong password, whereas unauthorized means the user might be identified but doesn't have enough privilege/permission to access the web page/call the service, e.g., the user can read documents but cannot edit them.
 
 The closest error code to represent unaunthenticated error is 401, although it's named as "Unauthorized". Its [spec](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401) also says that "authentication is possible" for 401, whereas "re-authenticating will make no difference" for 403. Please keep that in mind when handling unauthenticatd/unauthorized errors on client-side as well as when returning them on server-side. 
+
+## Host url
+
+Every `AuthedServiceDescriptor` or `UnauthedServiceDescriptor` only specify the path of the url that we are calling at. Thus you have to provide the preceeding part of the url to `ServiceClient`. 
+
+```TypeScript
+// Suppose we created a `ServiceClient`.
+client.hostUrl = 'http://localhost:8080';
+```
+
+Its intended use case is to switch server addresses between PROD and DEV environments, when `ServiceClient` is instantiated as a singleton.
+
+```TypeScript
+// Suppose we created a `ServiceClient`.
+declare environment: string;
+if (environment === 'PROD') {
+  client.hostUrl = 'https://www.my-domain.com';
+} else if (environment === 'DEV') {
+  client.hostUrl = 'http://dev.my-domain.com'
+} else if (environment === 'LOCAL') {
+  client.hostUrl = 'http://localhost:8080';
+}
+```
+
+If the services you are calling to are distributed through multiple server addresses/domains, you can definitely instantiates multiple `ServiceClient` as singletons, pointing to each server address.
 
