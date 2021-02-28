@@ -129,7 +129,7 @@ Its intended use case is to switch server addresses between PROD and DEV environ
 
 ```TypeScript
 // Suppose we created a `ServiceClient`.
-declare environment: string;
+declare let environment: string;
 if (environment === 'PROD') {
   client.hostUrl = 'https://www.my-domain.com';
 } else if (environment === 'DEV') {
@@ -139,5 +139,5 @@ if (environment === 'PROD') {
 }
 ```
 
-If the services you are calling to are distributed through multiple server addresses/domains, you can definitely instantiates multiple `ServiceClient` as singletons, pointing to each server address.
+If the services you are calling to are distributed through multiple server addresses/domains, you can definitely instantiate multiple `ServiceClient`s as singletons, pointing to each server address.
 
