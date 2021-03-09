@@ -118,7 +118,7 @@ The closest error code to represent unaunthenticated error is 401, although it's
 
 ## Host url
 
-Every `AuthedServiceDescriptor` or `UnauthedServiceDescriptor` only specify the path of the url that we are calling at. Thus you have to provide the preceeding part of the url to `ServiceClient`. 
+Every `AuthedServiceDescriptor` or `UnauthedServiceDescriptor` only specifies the path of the url that we are calling to. Thus you have to provide all the preceeding part of the path to `ServiceClient`. 
 
 ```TypeScript
 // Suppose we created a `ServiceClient`.
