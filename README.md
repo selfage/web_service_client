@@ -71,6 +71,32 @@ As also documented in `@selfage/service_descriptor`, an authed service requiring
 
 You don't need to explicitly set `signedSession` field. `ServiceClient` will set it with the session string by calling `read()` on `SessionStorage`.
 
+## Host url
+
+Every `AuthedServiceDescriptor` or `UnauthedServiceDescriptor` only specifies the path of the url that we are calling to. Thus you have to provide all the preceeding part of the path to `ServiceClient`. 
+
+```TypeScript
+// Suppose we created a `ServiceClient`.
+client.hostUrl = 'http://localhost:8080';
+```
+
+Its intended use case is to switch server addresses between PROD and DEV environments, when `ServiceClient` is instantiated as a singleton.
+
+```TypeScript
+// Suppose we created a `ServiceClient`.
+declare let environment: string;
+if (environment === 'PROD') {
+  client.hostUrl = 'https://www.my-domain.com';
+} else if (environment === 'DEV') {
+  client.hostUrl = 'http://dev.my-domain.com'
+} else if (environment === 'LOCAL') {
+  client.hostUrl = 'http://localhost:8080';
+}
+```
+
+If the services you are calling to are distributed through multiple server addresses/domains, you can definitely instantiate multiple `ServiceClient`s as singletons, pointing to each server address.
+
+
 ## Catch errors
 
 You can handle all kinds of errors for each service call using try-catch statement, including network connection errors which are thrown by injected `fetch` function, and server responded errors which are thrown by `ServiceClient` as `HttpError`.
@@ -115,29 +141,3 @@ client.onUnauthenticated = (/* No args */) =>  {
 It's often confused about unauthenticated and unauthorized error, especially because standard Http error codes did confuse them. Unauthenticated means the user cannot be identified, e.g., because of wrong password, whereas unauthorized means the user might be identified but doesn't have enough privilege/permission to access the web page/call the service, e.g., the user can read documents but cannot edit them.
 
 The closest error code to represent unaunthenticated error is 401, although it's named as "Unauthorized". Its [spec](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401) also says that "authentication is possible" for 401, whereas "re-authenticating will make no difference" for 403. Please keep that in mind when handling unauthenticatd/unauthorized errors on client-side as well as when returning them on server-side. 
-
-## Host url
-
-Every `AuthedServiceDescriptor` or `UnauthedServiceDescriptor` only specifies the path of the url that we are calling to. Thus you have to provide all the preceeding part of the path to `ServiceClient`. 
-
-```TypeScript
-// Suppose we created a `ServiceClient`.
-client.hostUrl = 'http://localhost:8080';
-```
-
-Its intended use case is to switch server addresses between PROD and DEV environments, when `ServiceClient` is instantiated as a singleton.
-
-```TypeScript
-// Suppose we created a `ServiceClient`.
-declare let environment: string;
-if (environment === 'PROD') {
-  client.hostUrl = 'https://www.my-domain.com';
-} else if (environment === 'DEV') {
-  client.hostUrl = 'http://dev.my-domain.com'
-} else if (environment === 'LOCAL') {
-  client.hostUrl = 'http://localhost:8080';
-}
-```
-
-If the services you are calling to are distributed through multiple server addresses/domains, you can definitely instantiate multiple `ServiceClient`s as singletons, pointing to each server address.
-
