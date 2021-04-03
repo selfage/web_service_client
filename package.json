@@ -1,6 +1,6 @@
 {
   "name": "@selfage/service_client",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Http-based client to call services.",
   "repository": {
     "type": "git",
@@ -9,6 +9,8 @@
   "keywords": [
     "Web",
     "Http",
+    "POST",
+    "Service",
     "Client"
   ],
   "author": "Yuxuan Xie <teststaybaka@gmail.com> (http://www.yuxuanxie.com)",
