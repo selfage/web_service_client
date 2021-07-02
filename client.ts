@@ -1,4 +1,3 @@
-import { LocalSessionStorage } from "./local_session_storage";
 import { SessionStorage } from "./session_storage";
 import { HttpError, StatusCode } from "@selfage/http_error";
 import { parseMessage } from "@selfage/message/parser";
@@ -22,10 +21,6 @@ export class ServiceClient {
     private sessionStorage: SessionStorage,
     private fetch: (input: RequestInfo, init?: RequestInit) => Promise<Response>
   ) {}
-
-  public static createWithLocalStorage(): ServiceClient {
-    return new ServiceClient(new LocalSessionStorage(), window.fetch);
-  }
 
   public async fetchUnauthed<ServiceRequest, ServiceResponse>(
     request: ServiceRequest,

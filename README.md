@@ -10,16 +10,18 @@ Written in TypeScript and compiled to ES6 with inline source map & source. See [
 
 ## Constructor
 
-`createWithLocalStorage()` injects a `SessionStorage` implementation using `window.localStorage` as well as `window.fetch`. Because of that, client created this way cannot be used in Nodejs environment.
+It's recommended to create and export a singleton instance of `ServiceClient`. The constructor takes an implementation of `SessionStorage` and a `fetch` function.
 
 ```TypeScript
 import { ServiceClient } from '@selfage/service_client';
-import { SessionStorage } from '@selfage/service_client/session_storage';
+import { LocalSessionStorage } from '@selfage/service_client/local_session_storage';
 
-let client = ServiceClient.createWithLocalStorage();
+export let client = new ServiceClient(new LocalSessionStorage(), window.fetch);
 ```
 
-However, both of them can be replaced. In fact, our unit tests replaced `SessionStorage` implementation with a mock implementation and `window.fetch` with `node-fetch`. However, `window.fetch` and `node-fetch` have different function signatures in TypeScript and we have to cast `node-fetch` as `any`. 
+The above example is for browser environment because of `window.fetch` as well as `LocalSessionStorage` which implements `SessionStorage` interface using `window.localStorage`.
+
+You can also inject implementations for Nodejs environment. In fact, our unit tests provide a mock implementation of `SessionStorage` and replace `window.fetch` with `node-fetch`. However, `window.fetch` and `node-fetch` have different function types in TypeScript, though they are effectively the same, and we have to cast `node-fetch` as `any`. 
 
 ```TypeScript
 import { ServiceClient } from '@selfage/service_client';
@@ -31,7 +33,7 @@ let client = new ServiceClient(new class implements SessionStorage {/* ... */}, 
 
 ## SessionStorage
 
-To not confuse with `window.sessionStorage`, `SessionStorage` in this lib has nothing to do with that, and as its name suggests, it's purely a TypeScript interface to store a session string. See its [source](https://github.com/selfage/service_client/blob/9ffb717f194f98212d60d3034bd12bd0bafeddf8/session_storage.ts). If used on backend servers, you can also provide an implementation using in-memory maps, disks, or database.
+To not confuse with `window.sessionStorage`, `SessionStorage` in this package is simply a TypeScript interface to store and retrieve a session string. See its [source](https://github.com/selfage/service_client/blob/9ffb717f194f98212d60d3034bd12bd0bafeddf8/session_storage.ts). If used on backend servers, you can also provide an implementation using in-memory maps, disks, or database.
 
 As stated above, we provide a `LocalSessionStorage` implementation using `window.localStorage` as opposed to using cookie. Therefore the session string will not be sent with every request.
 
