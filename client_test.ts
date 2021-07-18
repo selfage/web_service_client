@@ -19,7 +19,7 @@ import { Counter } from "@selfage/counter";
 import { newInternalServerErrorError } from "@selfage/http_error";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { assertReject, assertThat, eq, eqError } from "@selfage/test_matcher";
-import { TEST_RUNNER } from "@selfage/test_runner";
+import { NODE_TEST_RUNNER } from "@selfage/test_runner";
 
 let HOST_NAME = "localhost";
 let PORT = 8000;
@@ -39,7 +39,7 @@ async function closeServer(server: http.Server): Promise<void> {
   });
 }
 
-TEST_RUNNER.run({
+NODE_TEST_RUNNER.run({
   name: "ClientTest",
   cases: [
     {
