@@ -23,7 +23,7 @@ import { NODE_TEST_RUNNER } from "@selfage/test_runner";
 
 let HOST_NAME = "localhost";
 let PORT = 8000;
-let HOST_URL = `http://${HOST_NAME}:${PORT}`;
+let ORIGIN = `http://${HOST_NAME}:${PORT}`;
 
 async function createServer(app: express.Express): Promise<http.Server> {
   let server = http.createServer(app);
@@ -58,7 +58,7 @@ NODE_TEST_RUNNER.run({
           })(),
           fetch as any
         );
-        client.hostUrl = HOST_URL;
+        client.origin = ORIGIN;
 
         let app = express();
         let server = await createServer(app);
@@ -103,15 +103,15 @@ NODE_TEST_RUNNER.run({
           })(),
           fetch as any
         );
-        client.hostUrl = HOST_URL;
-        client.onHttpError = (error) => {
+        client.origin = ORIGIN;
+        client.on("httpError", (error) => {
           counter.increment("onHttpError");
           assertThat(
             error,
             eqError(newInternalServerErrorError("Internal")),
             "error"
           );
-        };
+        });
 
         let app = express();
         let server = await createServer(app);
@@ -153,7 +153,7 @@ NODE_TEST_RUNNER.run({
           })(),
           fetch as any
         );
-        client.hostUrl = HOST_URL;
+        client.origin = ORIGIN;
 
         let app = express();
         let server = await createServer(app);
@@ -198,15 +198,15 @@ NODE_TEST_RUNNER.run({
           })(),
           fetch as any
         );
-        client.hostUrl = HOST_URL;
-        client.onHttpError = (error) => {
+        client.origin = ORIGIN;
+        client.on("httpError", (error) => {
           counter.increment("onHttpError");
           assertThat(
             error,
             eqError(newInternalServerErrorError("Internal")),
             "error"
           );
-        };
+        });
 
         let app = express();
         let server = await createServer(app);
@@ -249,18 +249,18 @@ NODE_TEST_RUNNER.run({
           })(),
           fetch as any
         );
-        client.hostUrl = HOST_URL;
-        client.onHttpError = (error) => {
+        client.origin = ORIGIN;
+        client.on("httpError", (error) => {
           counter.increment("onHttpError");
           assertThat(
             error,
             eqError(newInternalServerErrorError("Unauthorized")),
             "error"
           );
-        };
-        client.onUnauthenticated = () => {
+        });
+        client.on("unauthenticated", () => {
           counter.increment("onUnauthenticated");
-        };
+        });
 
         let app = express();
         let server = await createServer(app);

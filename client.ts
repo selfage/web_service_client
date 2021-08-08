@@ -1,3 +1,4 @@
+import EventEmitter = require("events");
 import { SessionStorage } from "./session_storage";
 import { HttpError, StatusCode } from "@selfage/http_error";
 import { parseMessage } from "@selfage/message/parser";
@@ -8,19 +9,28 @@ import {
   WithSession,
 } from "@selfage/service_descriptor";
 
-export class ServiceClient {
-  // Everything before the path of a URL, without the trailing slash (/).
-  public hostUrl: string;
-  // Callback when server finished response with an unauthenticated error, i.e.,
-  // 401 Unauthorized error.
-  public onUnauthenticated: () => Promise<void> | void;
-  // Callback when server finished response with an error.
-  public onHttpError: (error: HttpError) => Promise<void> | void;
+export interface ServiceClient {
+  // When server finished response with an unauthenticated error, i.e., 401
+  // Unauthorized error.
+  on(event: "unauthenticated", listener: () => Promise<void> | void): this;
+  // When server finished response with an error code, i.e. either 4xx or 5xx.
+  on(
+    event: "httpError",
+    listener: (error: HttpError) => Promise<void> | void
+  ): this;
+  on(event: string, listener: Function): this;
+}
+
+export class ServiceClient extends EventEmitter {
+  // Everything before the path of a URL including http/https and port.
+  public origin: string;
 
   public constructor(
     private sessionStorage: SessionStorage,
     private fetch: (input: RequestInfo, init?: RequestInit) => Promise<Response>
-  ) {}
+  ) {
+    super();
+  }
 
   public async fetchUnauthed<ServiceRequest, ServiceResponse>(
     request: ServiceRequest,
@@ -37,40 +47,32 @@ export class ServiceClient {
     serviceDescriptor: AuthedServiceDescriptor<ServiceRequest, ServiceResponse>
   ): Promise<ServiceResponse> {
     request.signedSession = await this.sessionStorage.read();
-    return await this.fetchService(
-      request,
-      serviceDescriptor,
-      this.onUnauthenticated
-    );
+    return await this.fetchService(request, serviceDescriptor);
   }
 
   private async fetchService<ServiceRequest, ServiceResponse>(
     request: ServiceRequest,
-    serviceDescriptor: ServiceDescriptor<ServiceRequest, ServiceResponse>,
-    onUnauthenticated?: () => Promise<void> | void
+    serviceDescriptor: ServiceDescriptor<ServiceRequest, ServiceResponse>
   ): Promise<ServiceResponse> {
-    let response = await this.fetch(
-      `${this.hostUrl}${serviceDescriptor.path}`,
-      {
-        method: "POST",
-        body: JSON.stringify(request),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    let response = await this.fetch(`${this.origin}${serviceDescriptor.path}`, {
+      method: "POST",
+      body: JSON.stringify(request),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
     if (!response.ok) {
       let errorMessage = await response.text();
       let error = new HttpError(response.status, errorMessage);
       if (response.status === StatusCode.Unauthorized) {
         await this.sessionStorage.clear();
-        if (onUnauthenticated) {
-          onUnauthenticated();
-        }
+        await Promise.all(
+          this.listeners("unauthenticated").map((callback) => callback())
+        );
       }
-      if (this.onHttpError) {
-        this.onHttpError(error);
-      }
+      await Promise.all(
+        this.listeners("httpError").map((callback) => callback(error))
+      );
       throw error;
     }
 
