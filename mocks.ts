@@ -9,7 +9,7 @@ export class ServiceClientMock extends ServiceClient {
   public constructor() {
     super(undefined, undefined);
   }
-  public fetchServiceAny(request: any, serviceDescriptor: any): any {}
+  public fetchUnauthedAny(request: any, serviceDescriptor: any): any {}
   public async fetchUnauthed<ServiceRequest, ServiceResponse>(
     request: ServiceRequest,
     serviceDescriptor: UnauthedServiceDescriptor<
@@ -17,12 +17,13 @@ export class ServiceClientMock extends ServiceClient {
       ServiceResponse
     >
   ): Promise<ServiceResponse> {
-    return this.fetchServiceAny(request, serviceDescriptor);
+    return this.fetchUnauthedAny(request, serviceDescriptor);
   }
+  public fetchAuthedAny(request: any, serviceDescriptor: any): any {}
   public async fetchAuthed<ServiceRequest extends WithSession, ServiceResponse>(
     request: ServiceRequest,
     serviceDescriptor: AuthedServiceDescriptor<ServiceRequest, ServiceResponse>
   ): Promise<ServiceResponse> {
-    return this.fetchServiceAny(request, serviceDescriptor);
+    return this.fetchAuthedAny(request, serviceDescriptor);
   }
 }
