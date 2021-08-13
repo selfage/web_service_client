@@ -16,7 +16,7 @@ It's recommended to create and export a singleton instance of `ServiceClient`. T
 import { ServiceClient } from '@selfage/service_client';
 import { LocalSessionStorage } from '@selfage/service_client/local_session_storage';
 
-export let client = new ServiceClient(new LocalSessionStorage(), window.fetch);
+export let client = new ServiceClient(new LocalSessionStorage(), window.fetch.bind(window));
 ```
 
 The above example is for browser environment because of `window.fetch` as well as `LocalSessionStorage` which implements `SessionStorage` interface using `window.localStorage`.
