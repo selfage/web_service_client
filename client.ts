@@ -1,6 +1,10 @@
 import EventEmitter = require("events");
 import { SessionStorage } from "./session_storage";
-import { HttpError, StatusCode } from "@selfage/http_error";
+import {
+  HttpError,
+  StatusCode,
+  newUnauthorizedError,
+} from "@selfage/http_error";
 import { parseMessage } from "@selfage/message/parser";
 import {
   AuthedServiceDescriptor,
@@ -18,7 +22,6 @@ export interface ServiceClient {
     event: "httpError",
     listener: (error: HttpError) => Promise<void> | void
   ): this;
-  on(event: string, listener: Function): this;
 }
 
 export class ServiceClient extends EventEmitter {
@@ -46,7 +49,19 @@ export class ServiceClient extends EventEmitter {
     request: ServiceRequest,
     serviceDescriptor: AuthedServiceDescriptor<ServiceRequest, ServiceResponse>
   ): Promise<ServiceResponse> {
-    request.signedSession = await this.sessionStorage.read();
+    let signedSession = await this.sessionStorage.read();
+    if (!signedSession) {
+      let error = newUnauthorizedError("No session found.");
+      await Promise.all(
+        this.listeners("unauthenticated").map((callback) => callback())
+      );
+      await Promise.all(
+        this.listeners("httpError").map((callback) => callback(error))
+      );
+      throw newUnauthorizedError("No session found.");
+    }
+
+    request.signedSession = signedSession;
     return await this.fetchService(request, serviceDescriptor);
   }
 

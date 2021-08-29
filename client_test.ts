@@ -16,9 +16,13 @@ import {
   GetHistoryResponse,
 } from "./test_data/get_history";
 import { Counter } from "@selfage/counter";
-import { newInternalServerErrorError } from "@selfage/http_error";
+import {
+  newInternalServerErrorError,
+  newUnauthorizedError,
+} from "@selfage/http_error";
+import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { eqMessage } from "@selfage/message/test_matcher";
-import { assertReject, assertThat, eq, eqError } from "@selfage/test_matcher";
+import { assertReject, assertThat, eq } from "@selfage/test_matcher";
 import { NODE_TEST_RUNNER } from "@selfage/test_runner";
 
 let HOST_NAME = "localhost";
@@ -108,7 +112,7 @@ NODE_TEST_RUNNER.run({
           counter.increment("onHttpError");
           assertThat(
             error,
-            eqError(newInternalServerErrorError("Internal")),
+            eqHttpError(newInternalServerErrorError("Internal")),
             "error"
           );
         });
@@ -129,7 +133,7 @@ NODE_TEST_RUNNER.run({
         assertThat(counter.get("onHttpError"), eq(1), `onHttpError`);
         assertThat(
           error,
-          eqError(newInternalServerErrorError("Internal")),
+          eqHttpError(newInternalServerErrorError("Internal")),
           "error"
         );
 
@@ -203,7 +207,7 @@ NODE_TEST_RUNNER.run({
           counter.increment("onHttpError");
           assertThat(
             error,
-            eqError(newInternalServerErrorError("Internal")),
+            eqHttpError(newInternalServerErrorError("Internal")),
             "error"
           );
         });
@@ -224,7 +228,7 @@ NODE_TEST_RUNNER.run({
         assertThat(counter.get("onHttpError"), eq(1), `onHttpError`);
         assertThat(
           error,
-          eqError(newInternalServerErrorError("Internal")),
+          eqHttpError(newInternalServerErrorError("Internal")),
           "error"
         );
 
@@ -254,7 +258,7 @@ NODE_TEST_RUNNER.run({
           counter.increment("onHttpError");
           assertThat(
             error,
-            eqError(newInternalServerErrorError("Unauthorized")),
+            eqHttpError(newUnauthorizedError("Unauthorized")),
             "error"
           );
         });
@@ -284,12 +288,63 @@ NODE_TEST_RUNNER.run({
         );
         assertThat(
           error,
-          eqError(newInternalServerErrorError("Unauthorized")),
+          eqHttpError(newUnauthorizedError("Unauthorized")),
           "error"
         );
 
         // Cleanup
         await closeServer(server);
+      },
+    },
+    {
+      name: "GetHistoryUnauthenticatedErrorWithoutSession",
+      execute: async () => {
+        // Prepare
+        let counter = new Counter<string>();
+        let client = new ServiceClient(
+          new (class implements SessionStorage {
+            public read() {
+              return "";
+            }
+            public save() {}
+            public clear() {
+              counter.increment("clear");
+            }
+          })(),
+          fetch as any
+        );
+        client.origin = ORIGIN;
+        client.on("httpError", (error) => {
+          counter.increment("onHttpError");
+          assertThat(
+            error,
+            eqHttpError(newUnauthorizedError("No session")),
+            "error"
+          );
+        });
+        client.on("unauthenticated", () => {
+          counter.increment("onUnauthenticated");
+        });
+        let request: GetHistoryRequest = { page: 111 };
+
+        // Execute
+        let error = await assertReject(
+          client.fetchAuthed(request, GET_HISTORY)
+        );
+
+        // Verify
+        assertThat(counter.get("clear"), eq(0), "session clear times");
+        assertThat(counter.get("onHttpError"), eq(1), "onHttpError");
+        assertThat(
+          counter.get("onUnauthenticated"),
+          eq(1),
+          "onUnauthenticated"
+        );
+        assertThat(
+          error,
+          eqHttpError(newUnauthorizedError("No session")),
+          "error"
+        );
       },
     },
   ],
