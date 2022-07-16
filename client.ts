@@ -3,14 +3,13 @@ import { SessionStorage } from "./session_storage";
 import {
   HttpError,
   StatusCode,
+  newBadRequestError,
   newUnauthorizedError,
 } from "@selfage/http_error";
 import { parseMessage } from "@selfage/message/parser";
 import {
-  AuthedServiceDescriptor,
-  ServiceDescriptor,
-  UnauthedServiceDescriptor,
-  WithSession,
+  PrimitveTypeForBody,
+  WebServiceRequest,
 } from "@selfage/service_descriptor";
 
 export interface ServiceClient {
@@ -22,6 +21,8 @@ export interface ServiceClient {
     event: "httpError",
     listener: (error: HttpError) => Promise<void> | void
   ): this;
+  // General errors including http errors and network errors.
+  on(event: "error", listener: (error: any) => Promise<void> | void): this;
 }
 
 export class ServiceClient extends EventEmitter {
@@ -35,63 +36,87 @@ export class ServiceClient extends EventEmitter {
     super();
   }
 
-  public async fetchUnauthed<ServiceRequest, ServiceResponse>(
-    request: ServiceRequest,
-    serviceDescriptor: UnauthedServiceDescriptor<
-      ServiceRequest,
-      ServiceResponse
-    >
-  ): Promise<ServiceResponse> {
-    return await this.fetchService(request, serviceDescriptor);
-  }
-
-  public async fetchAuthed<ServiceRequest extends WithSession, ServiceResponse>(
-    request: ServiceRequest,
-    serviceDescriptor: AuthedServiceDescriptor<ServiceRequest, ServiceResponse>
-  ): Promise<ServiceResponse> {
-    let signedSession = await this.sessionStorage.read();
-    if (!signedSession) {
-      let error = newUnauthorizedError("No session found.");
-      await Promise.all(
-        this.listeners("unauthenticated").map((callback) => callback())
-      );
-      await Promise.all(
-        this.listeners("httpError").map((callback) => callback(error))
-      );
-      throw newUnauthorizedError("No session found.");
-    }
-
-    request.signedSession = signedSession;
-    return await this.fetchService(request, serviceDescriptor);
-  }
-
-  private async fetchService<ServiceRequest, ServiceResponse>(
-    request: ServiceRequest,
-    serviceDescriptor: ServiceDescriptor<ServiceRequest, ServiceResponse>
-  ): Promise<ServiceResponse> {
-    let response = await this.fetch(`${this.origin}${serviceDescriptor.path}`, {
-      method: "POST",
-      body: JSON.stringify(request),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (!response.ok) {
-      let errorMessage = await response.text();
-      let error = new HttpError(response.status, errorMessage);
-      if (response.status === StatusCode.Unauthorized) {
-        await this.sessionStorage.clear();
+  public async send<ClientRequest, ClientResponse>(
+    serviceRequest: WebServiceRequest<ClientRequest, ClientResponse>
+  ): Promise<ClientResponse> {
+    try {
+      return await this.sendOrThrowErrors(serviceRequest);
+    } catch (e) {
+      if (e.statusCode === StatusCode.Unauthorized) {
         await Promise.all(
           this.listeners("unauthenticated").map((callback) => callback())
         );
       }
-      await Promise.all(
-        this.listeners("httpError").map((callback) => callback(error))
+      if (e.statusCode) {
+        await Promise.all(
+          this.listeners("httpError").map((callback) => callback(e))
+        );
+      }
+      await Promise.all(this.listeners("error").map((callback) => callback(e)));
+      throw e;
+    }
+  }
+
+  private async sendOrThrowErrors<ClientRequest, ClientResponse>(
+    serviceRequest: WebServiceRequest<ClientRequest, ClientResponse>
+  ): Promise<ClientResponse> {
+    let searchParams = new URLSearchParams();
+    if (serviceRequest.descriptor.signedUserSession) {
+      let signedUserSession = await this.sessionStorage.read();
+      if (!signedUserSession) {
+        throw newUnauthorizedError("No user session found.");
+      }
+      searchParams.set(
+        serviceRequest.descriptor.signedUserSession.key,
+        signedUserSession
       );
-      throw error;
+    }
+    let request: any = serviceRequest.request;
+    if (serviceRequest.descriptor.side) {
+      searchParams.set(
+        serviceRequest.descriptor.side.key,
+        JSON.stringify(request.side)
+      );
     }
 
-    let data = await response.json();
-    return parseMessage(data, serviceDescriptor.responseDescriptor);
+    let contentType: string;
+    let body: any;
+    if (serviceRequest.descriptor.body.messageType) {
+      contentType = "application/json";
+      body = JSON.stringify(request.body);
+    } else if (
+      serviceRequest.descriptor.body.primitiveType === PrimitveTypeForBody.BLOB
+    ) {
+      contentType = "application/octet-stream";
+      body = request.body;
+    } else {
+      throw newBadRequestError("Unsupported client request body.");
+    }
+
+    let httpResponse = await this.fetch(
+      `${this.origin}${serviceRequest.descriptor.path}?${searchParams}`,
+      {
+        method: "POST",
+        body: body,
+        headers: {
+          "Content-Type": contentType,
+        },
+      }
+    );
+    if (!httpResponse.ok) {
+      let errorMessage = await httpResponse.text();
+      if (httpResponse.status === StatusCode.Unauthorized) {
+        await this.sessionStorage.clear();
+      }
+      throw new HttpError(httpResponse.status, errorMessage);
+    }
+
+    let data: any;
+    try {
+      data = await httpResponse.json();
+    } catch (e) {
+      throw new Error(`Unable to parse server response.`);
+    }
+    return parseMessage(data, serviceRequest.descriptor.response.messageType);
   }
 }

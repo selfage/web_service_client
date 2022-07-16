@@ -1,351 +1,202 @@
 import express = require("express");
 import http = require("http");
-import fetch from "node-fetch";
-import { ServiceClient } from "./client";
-import { SessionStorage } from "./session_storage";
 import {
-  GET_COMMENTS,
-  GET_COMMENTS_RESPONSE,
-  GetCommentsRequest,
+  GET_COMMENTS_REQUEST_BODY,
   GetCommentsResponse,
 } from "./test_data/get_comments";
-import {
-  GET_HISTORY,
-  GET_HISTORY_RESPONSE,
-  GetHistoryRequest,
-  GetHistoryResponse,
-} from "./test_data/get_history";
-import { Counter } from "@selfage/counter";
-import {
-  newInternalServerErrorError,
-  newUnauthorizedError,
-} from "@selfage/http_error";
-import { eqHttpError } from "@selfage/http_error/test_matcher";
+import { GET_HISTORY_REQUEST_BODY } from "./test_data/get_history";
+import { UPLOAD_FILE_REQUEST_SIDE } from "./test_data/upload_file";
+import { runInPuppeteer } from "@selfage/bundler_cli/runner_in_puppeteer";
+import { StatusCode } from "@selfage/http_error";
 import { eqMessage } from "@selfage/message/test_matcher";
-import { assertReject, assertThat, eq } from "@selfage/test_matcher";
-import { NODE_TEST_RUNNER } from "@selfage/test_runner";
+import { assertThat, eq } from "@selfage/test_matcher";
+import { TEST_RUNNER, TestCase } from "@selfage/test_runner";
 
 let HOST_NAME = "localhost";
-let PORT = 8000;
+let PORT = 8080;
 let ORIGIN = `http://${HOST_NAME}:${PORT}`;
+
+function setCorsHeader(res: express.Response): void {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "*");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+}
 
 async function createServer(app: express.Express): Promise<http.Server> {
   let server = http.createServer(app);
   await new Promise<void>((resolve) => {
     server.listen({ host: HOST_NAME, port: PORT }, () => resolve());
   });
+  app.options("/*", (req, res) => {
+    setCorsHeader(res);
+    res.send("ok");
+  });
   return server;
 }
 
-async function closeServer(server: http.Server): Promise<void> {
-  await new Promise<void>((resolve) => {
-    server.close(() => resolve());
-  });
+async function executeInPuppeteerAndAssertSuccess(
+  testBodyFile: string
+): Promise<void> {
+  await runInPuppeteer(testBodyFile, __dirname, 8000, undefined, [ORIGIN]);
+  assertThat(process.exitCode, eq(0), "exited without error");
 }
 
-NODE_TEST_RUNNER.run({
+async function closeServer(server?: http.Server): Promise<void> {
+  if (server) {
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    });
+  }
+}
+
+TEST_RUNNER.run({
   name: "ClientTest",
   cases: [
-    {
-      name: "GetComments",
-      execute: async () => {
+    new (class implements TestCase {
+      public name = "GetComments";
+      private server: http.Server;
+      public async execute() {
         // Prepare
-        let counter = new Counter<string>();
-        let client = new ServiceClient(
-          new (class implements SessionStorage {
-            public read() {
-              counter.increment("read");
-              return "anything";
-            }
-            public save() {}
-            public clear() {}
-          })(),
-          fetch as any
-        );
-        client.origin = ORIGIN;
-
         let app = express();
-        let server = await createServer(app);
-        let request: GetCommentsRequest = { videoId: "aaaaa" };
-        let response: GetCommentsResponse = { texts: ["1", "2", "3"] };
-        app.post("/get_comments", express.json(), (req, res) => {
+        this.server = await createServer(app);
+        app.post("/GetComments", express.json(), (req, res) => {
+          setCorsHeader(res);
           assertThat(
-            JSON.stringify(req.body),
-            eq(JSON.stringify(request)),
-            "request"
+            req.body,
+            eqMessage({ videoId: "aaaaa" }, GET_COMMENTS_REQUEST_BODY),
+            "request body"
           );
-          res.json(response);
+          res.json({ texts: ["1", "2", "3"] } as GetCommentsResponse);
         });
 
         // Execute
-        let actualResponse = await client.fetchUnauthed(request, GET_COMMENTS);
-
-        // Verify
-        assertThat(counter.get("read"), eq(0), `session read times`);
-        assertThat(
-          actualResponse,
-          eqMessage(response, GET_COMMENTS_RESPONSE),
-          "response"
-        );
-
-        // Cleanup
-        await closeServer(server);
-      },
-    },
-    {
-      name: "GetCommentsError",
-      execute: async () => {
+        await executeInPuppeteerAndAssertSuccess("test_data/get_comments_test");
+      }
+      public async tearDown() {
+        await closeServer(this.server);
+      }
+    })(),
+    new (class implements TestCase {
+      public name = "GetCommentsServerError";
+      private server: http.Server;
+      public async execute() {
         // Prepare
-        let counter = new Counter<string>();
-        let client = new ServiceClient(
-          new (class implements SessionStorage {
-            public read() {
-              return "anything";
-            }
-            public save() {}
-            public clear() {}
-          })(),
-          fetch as any
-        );
-        client.origin = ORIGIN;
-        client.on("httpError", (error) => {
-          counter.increment("onHttpError");
-          assertThat(
-            error,
-            eqHttpError(newInternalServerErrorError("Internal")),
-            "error"
-          );
-        });
-
         let app = express();
-        let server = await createServer(app);
-        let request: GetCommentsRequest = { videoId: "aaaaa" };
-        app.post("/get_comments", express.json(), (req, res) => {
-          res.sendStatus(500);
+        this.server = await createServer(app);
+        app.post("/GetComments", express.json(), (req, res) => {
+          setCorsHeader(res);
+          res.sendStatus(StatusCode.InternalServerError);
         });
 
         // Execute
-        let error = await assertReject(
-          client.fetchUnauthed(request, GET_COMMENTS)
+        await executeInPuppeteerAndAssertSuccess(
+          "test_data/get_comments_server_error_test"
         );
-
-        // Verify
-        assertThat(counter.get("onHttpError"), eq(1), `onHttpError`);
-        assertThat(
-          error,
-          eqHttpError(newInternalServerErrorError("Internal")),
-          "error"
-        );
-
-        // Cleanup
-        await closeServer(server);
-      },
-    },
-    {
-      name: "GetHistory",
-      execute: async () => {
+      }
+      public async tearDown() {
+        await closeServer(this.server);
+      }
+    })(),
+    new (class implements TestCase {
+      public name = "GetCommentsResponseError";
+      private server: http.Server;
+      public async execute() {
         // Prepare
-        let counter = new Counter<string>();
-        let client = new ServiceClient(
-          new (class implements SessionStorage {
-            public read() {
-              counter.increment("read");
-              return "some session";
-            }
-            public save() {}
-            public clear() {}
-          })(),
-          fetch as any
-        );
-        client.origin = ORIGIN;
-
         let app = express();
-        let server = await createServer(app);
-        let request: GetHistoryRequest = { page: 111 };
-        let response: GetHistoryResponse = { videos: ["a", "b", "c"] };
-        app.post("/get_history", express.json(), (req, res) => {
-          assertThat(
-            JSON.stringify(req.body),
-            eq(`{"page":111,"signedSession":"some session"}`),
-            `request`
-          );
-          res.json(response);
+        this.server = await createServer(app);
+        app.post("/GetComments", express.json(), (req, res) => {
+          setCorsHeader(res);
+          res.send("random string");
         });
 
         // Execute
-        let actualResponse = await client.fetchAuthed(request, GET_HISTORY);
-
-        // Verify
-        assertThat(counter.get("read"), eq(1), "session read times");
-        assertThat(
-          actualResponse,
-          eqMessage(response, GET_HISTORY_RESPONSE),
-          "response"
+        await executeInPuppeteerAndAssertSuccess(
+          "test_data/get_comments_response_error_test"
         );
-
-        // Cleanup
-        await closeServer(server);
-      },
-    },
-    {
-      name: "GetHistoryError",
-      execute: async () => {
+      }
+      public async tearDown() {
+        await closeServer(this.server);
+      }
+    })(),
+    new (class implements TestCase {
+      public name = "GetHistory";
+      private server: http.Server;
+      public async execute() {
         // Prepare
-        let counter = new Counter<string>();
-        let client = new ServiceClient(
-          new (class implements SessionStorage {
-            public read() {
-              return "some session";
-            }
-            public save() {}
-            public clear() {}
-          })(),
-          fetch as any
-        );
-        client.origin = ORIGIN;
-        client.on("httpError", (error) => {
-          counter.increment("onHttpError");
-          assertThat(
-            error,
-            eqHttpError(newInternalServerErrorError("Internal")),
-            "error"
-          );
-        });
-
         let app = express();
-        let server = await createServer(app);
-        let request: GetHistoryRequest = { page: 111 };
-        app.post("/get_history", express.json(), (req, res) => {
-          res.sendStatus(500);
+        this.server = await createServer(app);
+        app.post("/GetHistory", express.json(), (req, res) => {
+          setCorsHeader(res);
+          assertThat(req.query["u"], eq("some session"), "request session");
+          assertThat(
+            req.body,
+            eqMessage({ page: 10 }, GET_HISTORY_REQUEST_BODY),
+            `request body`
+          );
+          res.json({ videos: ["a", "b", "c"] });
         });
 
         // Execute
-        let error = await assertReject(
-          client.fetchAuthed(request, GET_HISTORY)
-        );
-
-        // Verify
-        assertThat(counter.get("onHttpError"), eq(1), `onHttpError`);
-        assertThat(
-          error,
-          eqHttpError(newInternalServerErrorError("Internal")),
-          "error"
-        );
-
-        // Cleanup
-        await closeServer(server);
-      },
-    },
-    {
-      name: "GetHistoryUnauthenticatedError",
-      execute: async () => {
+        await executeInPuppeteerAndAssertSuccess("test_data/get_history_test");
+      }
+      public async tearDown() {
+        await closeServer(this.server);
+      }
+    })(),
+    new (class implements TestCase {
+      public name = "GetHistoryUnauthenticatedError";
+      private server: http.Server;
+      public async execute() {
         // Prepare
-        let counter = new Counter<string>();
-        let client = new ServiceClient(
-          new (class implements SessionStorage {
-            public read() {
-              return "some session";
-            }
-            public save() {}
-            public clear() {
-              counter.increment("clear");
-            }
-          })(),
-          fetch as any
-        );
-        client.origin = ORIGIN;
-        client.on("httpError", (error) => {
-          counter.increment("onHttpError");
-          assertThat(
-            error,
-            eqHttpError(newUnauthorizedError("Unauthorized")),
-            "error"
-          );
-        });
-        client.on("unauthenticated", () => {
-          counter.increment("onUnauthenticated");
-        });
-
         let app = express();
-        let server = await createServer(app);
-        let request: GetHistoryRequest = { page: 111 };
-        app.post("/get_history", express.json(), (req, res) => {
-          res.sendStatus(401);
+        this.server = await createServer(app);
+        app.post("/GetHistory", express.json(), (req, res) => {
+          setCorsHeader(res);
+          res.sendStatus(StatusCode.Unauthorized);
         });
 
         // Execute
-        let error = await assertReject(
-          client.fetchAuthed(request, GET_HISTORY)
+        await executeInPuppeteerAndAssertSuccess(
+          "test_data/get_history_unauthenticated_error_test"
         );
-
-        // Verify
-        assertThat(counter.get("clear"), eq(1), "session clear times");
-        assertThat(counter.get("onHttpError"), eq(1), "onHttpError");
-        assertThat(
-          counter.get("onUnauthenticated"),
-          eq(1),
-          "onUnauthenticated"
+      }
+      public async tearDown() {
+        await closeServer(this.server);
+      }
+    })(),
+    new (class implements TestCase {
+      public name = "GetHistoryUnauthenticatedErrorWithoutSession";
+      public async execute() {
+        // Execute
+        await executeInPuppeteerAndAssertSuccess(
+          "test_data/get_history_unauthenticated_error_without_session_test"
         );
-        assertThat(
-          error,
-          eqHttpError(newUnauthorizedError("Unauthorized")),
-          "error"
-        );
-
-        // Cleanup
-        await closeServer(server);
-      },
-    },
-    {
-      name: "GetHistoryUnauthenticatedErrorWithoutSession",
-      execute: async () => {
+      }
+    })(),
+    new (class implements TestCase {
+      public name = "UploadFile";
+      private server: http.Server;
+      public async execute() {
         // Prepare
-        let counter = new Counter<string>();
-        let client = new ServiceClient(
-          new (class implements SessionStorage {
-            public read() {
-              return "";
-            }
-            public save() {}
-            public clear() {
-              counter.increment("clear");
-            }
-          })(),
-          fetch as any
-        );
-        client.origin = ORIGIN;
-        client.on("httpError", (error) => {
-          counter.increment("onHttpError");
+        let app = express();
+        this.server = await createServer(app);
+        app.post("/UploadFile", express.text({ type: "*/*" }), (req, res) => {
+          setCorsHeader(res);
           assertThat(
-            error,
-            eqHttpError(newUnauthorizedError("No session")),
-            "error"
+            JSON.parse(req.query["sd"] as string),
+            eqMessage({ fileName: "file1" }, UPLOAD_FILE_REQUEST_SIDE),
+            "request side"
           );
+          assertThat(req.body, eq("hahahah, random stuff"), "request body");
+          res.json({ byteSize: 10, success: true });
         });
-        client.on("unauthenticated", () => {
-          counter.increment("onUnauthenticated");
-        });
-        let request: GetHistoryRequest = { page: 111 };
 
         // Execute
-        let error = await assertReject(
-          client.fetchAuthed(request, GET_HISTORY)
-        );
-
-        // Verify
-        assertThat(counter.get("clear"), eq(0), "session clear times");
-        assertThat(counter.get("onHttpError"), eq(1), "onHttpError");
-        assertThat(
-          counter.get("onUnauthenticated"),
-          eq(1),
-          "onUnauthenticated"
-        );
-        assertThat(
-          error,
-          eqHttpError(newUnauthorizedError("No session")),
-          "error"
-        );
-      },
-    },
+        await executeInPuppeteerAndAssertSuccess("test_data/upload_file_test");
+      }
+      public async tearDown() {
+        await closeServer(this.server);
+      }
+    })(),
   ],
 });
