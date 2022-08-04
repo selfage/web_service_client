@@ -1,6 +1,6 @@
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
 import {
-  WebServiceDescriptor,
+  ServiceDescriptor,
   WebServiceRequest,
 } from "@selfage/service_descriptor";
 
@@ -53,7 +53,7 @@ export let GET_HISTORY_RESPONSE: MessageDescriptor<GetHistoryResponse> = {
   ],
 };
 
-export let GET_HISTORY: WebServiceDescriptor = {
+export let GET_HISTORY: ServiceDescriptor = {
   name: "GetHistory",
   path: "/GetHistory",
   signedUserSession: {

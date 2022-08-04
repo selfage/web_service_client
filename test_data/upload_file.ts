@@ -1,7 +1,7 @@
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
 import {
   PrimitveTypeForBody,
-  WebServiceDescriptor,
+  ServiceDescriptor,
   WebServiceRequest,
 } from "@selfage/service_descriptor";
 
@@ -39,7 +39,7 @@ export let UPLOAD_FILE_RESPONSE: MessageDescriptor<UploadFileResponse> = {
   ],
 };
 
-export let UPLOAD_FILE: WebServiceDescriptor = {
+export let UPLOAD_FILE: ServiceDescriptor = {
   name: "UploadFile",
   path: "/UploadFile",
   side: {

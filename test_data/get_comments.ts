@@ -1,6 +1,6 @@
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
 import {
-  WebServiceDescriptor,
+  ServiceDescriptor,
   WebServiceRequest,
 } from "@selfage/service_descriptor";
 
@@ -34,7 +34,7 @@ export let GET_COMMENTS_RESPONSE: MessageDescriptor<GetCommentsResponse> = {
   ],
 };
 
-export let GET_COMMENTS: WebServiceDescriptor = {
+export let GET_COMMENTS: ServiceDescriptor = {
   name: "GetComments",
   path: "/GetComments",
   body: {
