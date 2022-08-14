@@ -47,7 +47,7 @@ export let UPLOAD_FILE: ServiceDescriptor = {
     type: UPLOAD_FILE_REQUEST_SIDE,
   },
   body: {
-    primitiveType: PrimitveTypeForBody.BLOB,
+    primitiveType: PrimitveTypeForBody.BYTES,
   },
   response: {
     messageType: UPLOAD_FILE_RESPONSE,

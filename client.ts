@@ -85,7 +85,7 @@ export class ServiceClient extends EventEmitter {
       contentType = "application/json";
       body = JSON.stringify(request.body);
     } else if (
-      serviceRequest.descriptor.body.primitiveType === PrimitveTypeForBody.BLOB
+      serviceRequest.descriptor.body.primitiveType === PrimitveTypeForBody.BYTES
     ) {
       contentType = "application/octet-stream";
       body = request.body;
