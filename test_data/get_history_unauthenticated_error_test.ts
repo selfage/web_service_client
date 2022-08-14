@@ -1,4 +1,4 @@
-import { ServiceClient } from "../client";
+import { WebServiceClient } from "../client";
 import { LocalSessionStorage } from "../local_session_storage";
 import { newGetHistoryServiceRequest } from "./get_history";
 import { Counter } from "@selfage/counter";
@@ -11,7 +11,7 @@ async function main() {
   // Prepare
   let sessionStorage = new LocalSessionStorage();
   sessionStorage.save("some session");
-  let client = new ServiceClient(sessionStorage, window.fetch.bind(window));
+  let client = new WebServiceClient(sessionStorage, window.fetch.bind(window));
   client.origin = argv[0];
   let counter = new Counter<string>();
   client.on("unauthenticated", () => {

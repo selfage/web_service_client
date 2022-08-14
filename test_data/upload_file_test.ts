@@ -1,4 +1,4 @@
-import { ServiceClient } from "../client";
+import { WebServiceClient } from "../client";
 import { LocalSessionStorage } from "../local_session_storage";
 import {
   UPLOAD_FILE_RESPONSE,
@@ -10,7 +10,7 @@ import "@selfage/puppeteer_test_executor_api";
 
 async function main() {
   // Prepare
-  let client = new ServiceClient(
+  let client = new WebServiceClient(
     new LocalSessionStorage(),
     window.fetch.bind(window)
   );

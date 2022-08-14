@@ -12,7 +12,7 @@ import {
   WebServiceRequest,
 } from "@selfage/service_descriptor";
 
-export interface ServiceClient {
+export interface WebServiceClient {
   // When server finished response with an unauthenticated error, i.e., 401
   // Unauthorized error.
   on(event: "unauthenticated", listener: () => Promise<void> | void): this;
@@ -25,7 +25,7 @@ export interface ServiceClient {
   on(event: "error", listener: (error: any) => Promise<void> | void): this;
 }
 
-export class ServiceClient extends EventEmitter {
+export class WebServiceClient extends EventEmitter {
   // Everything before the path of a URL including http/https and port.
   public origin: string;
 

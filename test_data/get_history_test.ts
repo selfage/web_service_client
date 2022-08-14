@@ -1,4 +1,4 @@
-import { ServiceClient } from "../client";
+import { WebServiceClient } from "../client";
 import { LocalSessionStorage } from "../local_session_storage";
 import {
   GET_HISTORY_RESPONSE,
@@ -12,7 +12,7 @@ async function main() {
   // Prepare
   let sessionStorage = new LocalSessionStorage();
   sessionStorage.save("some session");
-  let client = new ServiceClient(sessionStorage, window.fetch.bind(window));
+  let client = new WebServiceClient(sessionStorage, window.fetch.bind(window));
   client.origin = argv[0];
 
   // Execute
