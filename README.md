@@ -1,8 +1,8 @@
-# @selfage/service_client
+# @selfage/web_service_client
 
 ## Install
 
-`npm install @selfage/service_client`
+`npm install @selfage/web_service_client`
 
 ## Overview
 
