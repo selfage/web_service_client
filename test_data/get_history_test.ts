@@ -1,9 +1,6 @@
 import { WebServiceClient } from "../client";
 import { LocalSessionStorage } from "../local_session_storage";
-import {
-  GET_HISTORY_RESPONSE,
-  newGetHistoryServiceRequest,
-} from "./get_history";
+import { GET_HISTORY_RESPONSE, getHistory } from "./get_history";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { assertThat } from "@selfage/test_matcher";
 import "@selfage/puppeteer_test_executor_api";
@@ -12,13 +9,11 @@ async function main() {
   // Prepare
   let sessionStorage = new LocalSessionStorage();
   sessionStorage.save("some session");
-  let client = new WebServiceClient(sessionStorage, window.fetch.bind(window));
-  client.origin = argv[0];
+  let client = WebServiceClient.create(sessionStorage);
+  client.origin = puppeteerArgv[0];
 
   // Execute
-  let actualResponse = await client.send(
-    newGetHistoryServiceRequest({ body: { page: 10 } })
-  );
+  let actualResponse = await getHistory(client, { page: 10 });
 
   // Verify
   assertThat(
@@ -26,7 +21,7 @@ async function main() {
     eqMessage({ videos: ["a", "b", "c"] }, GET_HISTORY_RESPONSE),
     "response"
   );
-  exit();
+  puppeteerExit();
 }
 
 main();

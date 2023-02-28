@@ -1,6 +1,6 @@
 import { WebServiceClient } from "../client";
 import { LocalSessionStorage } from "../local_session_storage";
-import { newGetHistoryServiceRequest } from "./get_history";
+import { getHistory } from "./get_history";
 import { Counter } from "@selfage/counter";
 import { newUnauthorizedError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
@@ -9,11 +9,8 @@ import "@selfage/puppeteer_test_executor_api";
 
 async function main() {
   // Prepare
-  let client = new WebServiceClient(
-    new LocalSessionStorage(),
-    window.fetch.bind(window)
-  );
-  client.origin = argv[0];
+  let client = WebServiceClient.create(new LocalSessionStorage());
+  client.origin = puppeteerArgv[0];
   let counter = new Counter<string>();
   client.on("unauthenticated", () => {
     counter.increment("onUnauthenticated");
@@ -28,9 +25,7 @@ async function main() {
   });
 
   // Execute
-  let error = await assertReject(
-    client.send(newGetHistoryServiceRequest({ body: { page: 11 } }))
-  );
+  let error = await assertReject(getHistory(client, { page: 11 }));
 
   // Verify
   assertThat(counter.get("onHttpError"), eq(1), "onHttpError counter");
@@ -44,7 +39,7 @@ async function main() {
     eqHttpError(newUnauthorizedError("No user session")),
     "error"
   );
-  exit();
+  puppeteerExit();
 }
 
 main();

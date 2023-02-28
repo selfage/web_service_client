@@ -2,16 +2,16 @@ import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
 import {
   PrimitveTypeForBody,
   ServiceDescriptor,
-  WebServiceRequest,
 } from "@selfage/service_descriptor";
+import { WebServiceClientInterface } from "@selfage/service_descriptor/web_service_client_interface";
 
-export interface UploadFileRequestSide {
+export interface UploadFileRequestMetadata {
   fileName: string;
 }
 
-export let UPLOAD_FILE_REQUEST_SIDE: MessageDescriptor<UploadFileRequestSide> =
+export let UPLOAD_FILE_REQUEST_METADATA: MessageDescriptor<UploadFileRequestMetadata> =
   {
-    name: "UploadFileRequestSide",
+    name: "UploadFileRequestMetadata",
     fields: [
       {
         name: "fileName",
@@ -42,9 +42,9 @@ export let UPLOAD_FILE_RESPONSE: MessageDescriptor<UploadFileResponse> = {
 export let UPLOAD_FILE: ServiceDescriptor = {
   name: "UploadFile",
   path: "/UploadFile",
-  side: {
+  metadata: {
     key: "sd",
-    type: UPLOAD_FILE_REQUEST_SIDE,
+    type: UPLOAD_FILE_REQUEST_METADATA,
   },
   body: {
     primitiveType: PrimitveTypeForBody.BYTES,
@@ -54,16 +54,14 @@ export let UPLOAD_FILE: ServiceDescriptor = {
   },
 };
 
-export interface UploadFileClientRequest {
-  side: UploadFileRequestSide;
-  body: Blob;
-}
-
-export function newUploadFileServiceRequest(
-  request: UploadFileClientRequest
-): WebServiceRequest<UploadFileClientRequest, UploadFileResponse> {
-  return {
+export function uploadFile(
+  client: WebServiceClientInterface,
+  body: Blob,
+  metadata: UploadFileRequestMetadata
+): Promise<UploadFileResponse> {
+  return client.send({
     descriptor: UPLOAD_FILE,
-    request,
-  };
+    body,
+    metadata,
+  });
 }

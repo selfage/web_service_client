@@ -1,8 +1,6 @@
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
-import {
-  ServiceDescriptor,
-  WebServiceRequest,
-} from "@selfage/service_descriptor";
+import { ServiceDescriptor } from "@selfage/service_descriptor";
+import { WebServiceClientInterface } from "@selfage/service_descriptor/web_service_client_interface";
 
 export interface MySession {
   sessionId?: string;
@@ -56,7 +54,7 @@ export let GET_HISTORY_RESPONSE: MessageDescriptor<GetHistoryResponse> = {
 export let GET_HISTORY: ServiceDescriptor = {
   name: "GetHistory",
   path: "/GetHistory",
-  signedUserSession: {
+  auth: {
     key: "u",
     type: MY_SESSION,
   },
@@ -72,11 +70,12 @@ export interface GetHistoryClientRequest {
   body: GetHistoryRequestBody;
 }
 
-export function newGetHistoryServiceRequest(
-  request: GetHistoryClientRequest
-): WebServiceRequest<GetHistoryClientRequest, GetHistoryResponse> {
-  return {
+export function getHistory(
+  client: WebServiceClientInterface,
+  body: GetHistoryRequestBody
+): Promise<GetHistoryResponse> {
+  return client.send({
     descriptor: GET_HISTORY,
-    request,
-  };
+    body,
+  });
 }

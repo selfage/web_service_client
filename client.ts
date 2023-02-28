@@ -9,8 +9,9 @@ import {
 import { parseMessage } from "@selfage/message/parser";
 import {
   PrimitveTypeForBody,
-  WebServiceRequest,
+  ServiceDescriptor,
 } from "@selfage/service_descriptor";
+import { WebServiceClientInterface } from "@selfage/service_descriptor/web_service_client_interface";
 
 export interface WebServiceClient {
   // When server finished response with an unauthenticated error, i.e., 401
@@ -25,7 +26,10 @@ export interface WebServiceClient {
   on(event: "error", listener: (error: any) => Promise<void> | void): this;
 }
 
-export class WebServiceClient extends EventEmitter {
+export class WebServiceClient
+  extends EventEmitter
+  implements WebServiceClientInterface
+{
   // Everything before the path of a URL including http/https and port.
   public origin: string;
 
@@ -36,11 +40,13 @@ export class WebServiceClient extends EventEmitter {
     super();
   }
 
-  public async send<ClientRequest, ClientResponse>(
-    serviceRequest: WebServiceRequest<ClientRequest, ClientResponse>
-  ): Promise<ClientResponse> {
+  public static create(sessionStorage: SessionStorage): WebServiceClient {
+    return new WebServiceClient(sessionStorage, window.fetch.bind(window));
+  }
+
+  public async send(request: any): Promise<any> {
     try {
-      return await this.sendOrThrowErrors(serviceRequest);
+      return await this.sendOrThrowErrors(request);
     } catch (e) {
       if (e.statusCode === StatusCode.Unauthorized) {
         await Promise.all(
@@ -57,50 +63,44 @@ export class WebServiceClient extends EventEmitter {
     }
   }
 
-  private async sendOrThrowErrors<ClientRequest, ClientResponse>(
-    serviceRequest: WebServiceRequest<ClientRequest, ClientResponse>
-  ): Promise<ClientResponse> {
-    let searchParams = new URLSearchParams();
-    if (serviceRequest.descriptor.signedUserSession) {
+  private async sendOrThrowErrors(request: any): Promise<any> {
+    let serviceDescriptor = request.descriptor as ServiceDescriptor;
+    let headers = new Headers();
+    if (serviceDescriptor.auth) {
       let signedUserSession = await this.sessionStorage.read();
       if (!signedUserSession) {
         throw newUnauthorizedError("No user session found.");
       }
-      searchParams.set(
-        serviceRequest.descriptor.signedUserSession.key,
-        signedUserSession
-      );
+      headers.append(serviceDescriptor.auth.key, signedUserSession);
     }
-    let request: any = serviceRequest.request;
-    if (serviceRequest.descriptor.side) {
+
+    let searchParams = new URLSearchParams();
+    if (request.metadata) {
       searchParams.set(
-        serviceRequest.descriptor.side.key,
-        JSON.stringify(request.side)
+        serviceDescriptor.metadata.key,
+        JSON.stringify(request.metadata)
       );
     }
 
-    let contentType: string;
     let body: any;
-    if (serviceRequest.descriptor.body.messageType) {
-      contentType = "application/json";
+    if (serviceDescriptor.body.messageType) {
+      headers.append("Content-Type", "application/json");
       body = JSON.stringify(request.body);
     } else if (
-      serviceRequest.descriptor.body.primitiveType === PrimitveTypeForBody.BYTES
+      serviceDescriptor.body.primitiveType === PrimitveTypeForBody.BYTES
     ) {
-      contentType = "application/octet-stream";
+      headers.append("Content-Type", "application/octet-stream");
       body = request.body;
     } else {
       throw newBadRequestError("Unsupported client request body.");
     }
 
     let httpResponse = await this.fetch(
-      `${this.origin}${serviceRequest.descriptor.path}?${searchParams}`,
+      `${this.origin}${serviceDescriptor.path}?${searchParams}`,
       {
         method: "POST",
-        body: body,
-        headers: {
-          "Content-Type": contentType,
-        },
+        body,
+        headers,
       }
     );
     if (!httpResponse.ok) {
@@ -117,6 +117,6 @@ export class WebServiceClient extends EventEmitter {
     } catch (e) {
       throw new Error(`Unable to parse server response.`);
     }
-    return parseMessage(data, serviceRequest.descriptor.response.messageType);
+    return parseMessage(data, serviceDescriptor.response.messageType);
   }
 }

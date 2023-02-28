@@ -5,7 +5,7 @@ import {
   GetCommentsResponse,
 } from "./test_data/get_comments";
 import { GET_HISTORY_REQUEST_BODY } from "./test_data/get_history";
-import { UPLOAD_FILE_REQUEST_SIDE } from "./test_data/upload_file";
+import { UPLOAD_FILE_REQUEST_METADATA } from "./test_data/upload_file";
 import { runInPuppeteer } from "@selfage/bundler_cli/runner_in_puppeteer";
 import { StatusCode } from "@selfage/http_error";
 import { eqMessage } from "@selfage/message/test_matcher";
@@ -127,7 +127,7 @@ TEST_RUNNER.run({
         this.server = await createServer(app);
         app.post("/GetHistory", express.json(), (req, res) => {
           setCorsHeader(res);
-          assertThat(req.query["u"], eq("some session"), "request session");
+          assertThat(req.header("u"), eq("some session"), "request session");
           assertThat(
             req.body,
             eqMessage({ page: 10 }, GET_HISTORY_REQUEST_BODY),
@@ -184,7 +184,7 @@ TEST_RUNNER.run({
           setCorsHeader(res);
           assertThat(
             JSON.parse(req.query["sd"] as string),
-            eqMessage({ fileName: "file1" }, UPLOAD_FILE_REQUEST_SIDE),
+            eqMessage({ fileName: "file1" }, UPLOAD_FILE_REQUEST_METADATA),
             "request side"
           );
           assertThat(req.body, eq("hahahah, random stuff"), "request body");
