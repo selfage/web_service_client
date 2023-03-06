@@ -8,7 +8,7 @@ import "@selfage/puppeteer_test_executor_api";
 async function main() {
   // Prepare
   let client = WebServiceClient.create(new LocalSessionStorage());
-  client.origin = puppeteerArgv[0];
+  client.baseUrl = puppeteerArgv[0];
 
   // Execute
   let actualResponse = await getComments(client, { videoId: "aaaaa" });

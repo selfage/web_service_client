@@ -30,8 +30,8 @@ export class WebServiceClient
   extends EventEmitter
   implements WebServiceClientInterface
 {
-  // Everything before the path of a URL including http/https and port.
-  public origin: string;
+  // Include origin and path, prior to any service path.
+  public baseUrl: string;
 
   public constructor(
     private sessionStorage: SessionStorage,
@@ -96,7 +96,7 @@ export class WebServiceClient
     }
 
     let httpResponse = await this.fetch(
-      `${this.origin}${serviceDescriptor.path}?${searchParams}`,
+      `${this.baseUrl}${serviceDescriptor.path}?${searchParams}`,
       {
         method: "POST",
         body,

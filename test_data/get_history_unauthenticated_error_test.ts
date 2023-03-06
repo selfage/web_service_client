@@ -12,7 +12,7 @@ async function main() {
   let sessionStorage = new LocalSessionStorage();
   sessionStorage.save("some session");
   let client = WebServiceClient.create(sessionStorage);
-  client.origin = puppeteerArgv[0];
+  client.baseUrl = puppeteerArgv[0];
   let counter = new Counter<string>();
   client.on("unauthenticated", () => {
     counter.increment("onUnauthenticated");
