@@ -35,9 +35,9 @@ async function createServer(app: express.Express): Promise<http.Server> {
 }
 
 async function executeInPuppeteerAndAssertSuccess(
-  testBodyFile: string
+  testBodyFile: string,
 ): Promise<void> {
-  await runInPuppeteer(testBodyFile, __dirname, 8000, undefined, [ORIGIN]);
+  await runInPuppeteer(testBodyFile, ".", 8000, true, undefined, [ORIGIN]);
   assertThat(process.exitCode, eq(0), "exited without error");
 }
 
@@ -64,7 +64,7 @@ TEST_RUNNER.run({
           assertThat(
             req.body,
             eqMessage({ videoId: "aaaaa" }, GET_COMMENTS_REQUEST_BODY),
-            "request body"
+            "request body",
           );
           res.json({ texts: ["1", "2", "3"] } as GetCommentsResponse);
         });
@@ -90,7 +90,7 @@ TEST_RUNNER.run({
 
         // Execute
         await executeInPuppeteerAndAssertSuccess(
-          "test_data/get_comments_server_error_test"
+          "test_data/get_comments_server_error_test",
         );
       }
       public async tearDown() {
@@ -111,7 +111,7 @@ TEST_RUNNER.run({
 
         // Execute
         await executeInPuppeteerAndAssertSuccess(
-          "test_data/get_comments_response_error_test"
+          "test_data/get_comments_response_error_test",
         );
       }
       public async tearDown() {
@@ -131,7 +131,7 @@ TEST_RUNNER.run({
           assertThat(
             req.body,
             eqMessage({ page: 10 }, GET_HISTORY_REQUEST_BODY),
-            `request body`
+            `request body`,
           );
           res.json({ videos: ["a", "b", "c"] });
         });
@@ -157,7 +157,7 @@ TEST_RUNNER.run({
 
         // Execute
         await executeInPuppeteerAndAssertSuccess(
-          "test_data/get_history_unauthenticated_error_test"
+          "test_data/get_history_unauthenticated_error_test",
         );
       }
       public async tearDown() {
@@ -169,7 +169,7 @@ TEST_RUNNER.run({
       public async execute() {
         // Execute
         await executeInPuppeteerAndAssertSuccess(
-          "test_data/get_history_unauthenticated_error_without_session_test"
+          "test_data/get_history_unauthenticated_error_without_session_test",
         );
       }
     })(),
@@ -185,7 +185,7 @@ TEST_RUNNER.run({
           assertThat(
             JSON.parse(req.query["sd"] as string),
             eqMessage({ fileName: "file1" }, UPLOAD_FILE_REQUEST_METADATA),
-            "request side"
+            "request side",
           );
           assertThat(req.body, eq("hahahah, random stuff"), "request body");
           res.json({ byteSize: 10, success: true });
