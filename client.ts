@@ -20,7 +20,7 @@ export interface WebServiceClient {
   // When server finished response with an error code, i.e. either 4xx or 5xx.
   on(
     event: "httpError",
-    listener: (error: HttpError) => Promise<void> | void
+    listener: (error: HttpError) => Promise<void> | void,
   ): this;
   // General errors including http errors and network errors.
   on(event: "error", listener: (error: any) => Promise<void> | void): this;
@@ -35,7 +35,10 @@ export class WebServiceClient
 
   public constructor(
     private sessionStorage: SessionStorage,
-    private fetch: (input: RequestInfo, init?: RequestInit) => Promise<Response>
+    private fetch: (
+      input: RequestInfo,
+      init?: RequestInit,
+    ) => Promise<Response>,
   ) {
     super();
   }
@@ -50,12 +53,12 @@ export class WebServiceClient
     } catch (e) {
       if (e.statusCode === StatusCode.Unauthorized) {
         await Promise.all(
-          this.listeners("unauthenticated").map((callback) => callback())
+          this.listeners("unauthenticated").map((callback) => callback()),
         );
       }
       if (e.statusCode) {
         await Promise.all(
-          this.listeners("httpError").map((callback) => callback(e))
+          this.listeners("httpError").map((callback) => callback(e)),
         );
       }
       await Promise.all(this.listeners("error").map((callback) => callback(e)));
@@ -78,7 +81,7 @@ export class WebServiceClient
     if (request.metadata) {
       searchParams.set(
         serviceDescriptor.metadata.key,
-        JSON.stringify(request.metadata)
+        JSON.stringify(request.metadata),
       );
     }
 
@@ -86,6 +89,14 @@ export class WebServiceClient
     if (serviceDescriptor.body.messageType) {
       headers.append("Content-Type", "application/json");
       body = JSON.stringify(request.body);
+    } else if (serviceDescriptor.body.streamMessageType) {
+      headers.append("Content-Type", "application/octet-stream");
+      body = new ReadableStream({
+        start(controller) {
+          request.body.on("data", (chunk: string) => controller.enqueue(chunk));
+          request.body.on("end", () => controller.close());
+        },
+      });
     } else if (
       serviceDescriptor.body.primitiveType === PrimitveTypeForBody.BYTES
     ) {
@@ -101,7 +112,7 @@ export class WebServiceClient
         method: "POST",
         body,
         headers,
-      }
+      },
     );
     if (!httpResponse.ok) {
       let errorMessage = await httpResponse.text();

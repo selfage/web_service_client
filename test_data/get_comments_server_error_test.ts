@@ -4,20 +4,20 @@ import { getComments } from "./get_comments";
 import { Counter } from "@selfage/counter";
 import { newInternalServerErrorError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
+import { exit, getArgv } from "@selfage/puppeteer_test_executor_api";
 import { assertReject, assertThat, eq } from "@selfage/test_matcher";
-import "@selfage/puppeteer_test_executor_api";
 
 async function main() {
   // Prepare
   let client = WebServiceClient.create(new LocalSessionStorage());
-  client.baseUrl = puppeteerArgv[0];
+  client.baseUrl = getArgv()[0];
   let counter = new Counter<string>();
   client.on("httpError", (error) => {
     counter.increment("onHttpError");
     assertThat(
       error,
       eqHttpError(newInternalServerErrorError("Internal")),
-      "http error"
+      "http error",
     );
   });
   client.on("error", (error) => {
@@ -25,7 +25,7 @@ async function main() {
     assertThat(
       error,
       eqHttpError(newInternalServerErrorError("Internal")),
-      "error"
+      "error",
     );
   });
 
@@ -38,9 +38,9 @@ async function main() {
   assertThat(
     error,
     eqHttpError(newInternalServerErrorError("Internal")),
-    "response error"
+    "response error",
   );
-  puppeteerExit();
+  exit();
 }
 
 main();

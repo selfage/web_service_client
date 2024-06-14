@@ -66,10 +66,6 @@ export let GET_HISTORY: ServiceDescriptor = {
   },
 };
 
-export interface GetHistoryClientRequest {
-  body: GetHistoryRequestBody;
-}
-
 export function getHistory(
   client: WebServiceClientInterface,
   body: GetHistoryRequestBody

@@ -4,15 +4,15 @@ import { getHistory } from "./get_history";
 import { Counter } from "@selfage/counter";
 import { newUnauthorizedError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
+import { exit, getArgv } from "@selfage/puppeteer_test_executor_api";
 import { assertReject, assertThat, eq } from "@selfage/test_matcher";
-import "@selfage/puppeteer_test_executor_api";
 
 async function main() {
   // Prepare
   let sessionStorage = new LocalSessionStorage();
   sessionStorage.save("some session");
   let client = WebServiceClient.create(sessionStorage);
-  client.baseUrl = puppeteerArgv[0];
+  client.baseUrl = getArgv()[0];
   let counter = new Counter<string>();
   client.on("unauthenticated", () => {
     counter.increment("onUnauthenticated");
@@ -22,7 +22,7 @@ async function main() {
     assertThat(
       error,
       eqHttpError(newUnauthorizedError("Unauthorized")),
-      "http error"
+      "http error",
     );
   });
 
@@ -35,14 +35,14 @@ async function main() {
   assertThat(
     counter.get("onUnauthenticated"),
     eq(1),
-    "onUnauthenticated counter"
+    "onUnauthenticated counter",
   );
   assertThat(
     error,
     eqHttpError(newUnauthorizedError("Unauthorized")),
-    "response error"
+    "response error",
   );
-  puppeteerExit();
+  exit();
 }
 
 main();
