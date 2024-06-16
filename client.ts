@@ -11,7 +11,10 @@ import {
   PrimitveTypeForBody,
   ServiceDescriptor,
 } from "@selfage/service_descriptor";
-import { WebServiceClientInterface } from "@selfage/service_descriptor/web_service_client_interface";
+import {
+  WebServiceClientInterface,
+  WebServiceClientOptions,
+} from "@selfage/service_descriptor/web_service_client_interface";
 
 export interface WebServiceClient {
   // When server finished response with an unauthenticated error, i.e., 401
@@ -30,11 +33,20 @@ export class WebServiceClient
   extends EventEmitter
   implements WebServiceClientInterface
 {
+  public static create(sessionStorage: SessionStorage): WebServiceClient {
+    return new WebServiceClient(
+      sessionStorage,
+      (callback, ms) => setTimeout(callback, ms),
+      window.fetch.bind(window),
+    );
+  }
+
   // Include origin and path, prior to any service path.
   public baseUrl: string;
 
   public constructor(
     private sessionStorage: SessionStorage,
+    private setTimeout: (callback: Function, ms: number) => number,
     private fetch: (
       input: RequestInfo,
       init?: RequestInit,
@@ -43,13 +55,12 @@ export class WebServiceClient
     super();
   }
 
-  public static create(sessionStorage: SessionStorage): WebServiceClient {
-    return new WebServiceClient(sessionStorage, window.fetch.bind(window));
-  }
-
-  public async send(request: any): Promise<any> {
+  public async send(
+    request: any,
+    options: WebServiceClientOptions = {},
+  ): Promise<any> {
     try {
-      return await this.sendOrThrowErrors(request);
+      return await this.sendOrThrowErrors(request, options);
     } catch (e) {
       if (e.statusCode === StatusCode.Unauthorized) {
         await Promise.all(
@@ -66,7 +77,10 @@ export class WebServiceClient
     }
   }
 
-  private async sendOrThrowErrors(request: any): Promise<any> {
+  private async sendOrThrowErrors(
+    request: any,
+    options: WebServiceClientOptions,
+  ): Promise<any> {
     let serviceDescriptor = request.descriptor as ServiceDescriptor;
     let headers = new Headers();
     if (serviceDescriptor.auth) {
@@ -106,13 +120,14 @@ export class WebServiceClient
       throw newBadRequestError("Unsupported client request body.");
     }
 
-    let httpResponse = await this.fetch(
-      `${this.baseUrl}${serviceDescriptor.path}?${searchParams}`,
-      {
-        method: "POST",
-        body,
-        headers,
-      },
+    let httpResponse = await this.fetchWithTimeoutAndRetries(
+      serviceDescriptor.path,
+      searchParams,
+      body,
+      headers,
+      options.keepAlive,
+      options.retries,
+      options.timeout,
     );
     if (!httpResponse.ok) {
       let errorMessage = await httpResponse.text();
@@ -129,5 +144,43 @@ export class WebServiceClient
       throw new Error(`Unable to parse server response.`);
     }
     return parseMessage(data, serviceDescriptor.response.messageType);
+  }
+
+  private async fetchWithTimeoutAndRetries(
+    path: string,
+    searchParams: URLSearchParams,
+    body: any,
+    headers: Headers,
+    keepalive = false,
+    retries = 1,
+    timeout?: number,
+  ): Promise<Response> {
+    let lastError: any;
+    for (let i = 0; i < retries; i++) {
+      try {
+        let signal: AbortSignal;
+        if (timeout) {
+          let abortController = new AbortController();
+          signal = abortController.signal;
+          this.setTimeout(() => abortController.abort(), timeout);
+        }
+        return await this.fetch(`${this.baseUrl}${path}?${searchParams}`, {
+          method: "POST",
+          body,
+          headers,
+          keepalive,
+          signal,
+        });
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") {
+          throw new Error("Http request timed out.");
+        } else {
+          lastError = e;
+        }
+      }
+    }
+    throw new Error(
+      `Http request failed after ${retries} attempts. ${lastError}`,
+    );
   }
 }

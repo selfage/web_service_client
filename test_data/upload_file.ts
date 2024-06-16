@@ -57,7 +57,7 @@ export let UPLOAD_FILE: ServiceDescriptor = {
 export function uploadFile(
   client: WebServiceClientInterface,
   body: Blob,
-  metadata: UploadFileRequestMetadata
+  metadata: UploadFileRequestMetadata,
 ): Promise<UploadFileResponse> {
   return client.send({
     descriptor: UPLOAD_FILE,

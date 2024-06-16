@@ -1,6 +1,9 @@
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
 import { ServiceDescriptor } from "@selfage/service_descriptor";
-import { WebServiceClientInterface } from "@selfage/service_descriptor/web_service_client_interface";
+import {
+  WebServiceClientInterface,
+  WebServiceClientOptions,
+} from "@selfage/service_descriptor/web_service_client_interface";
 
 export interface GetCommentsRequestBody {
   videoId?: string;
@@ -45,10 +48,14 @@ export let GET_COMMENTS: ServiceDescriptor = {
 
 export function getComments(
   client: WebServiceClientInterface,
-  body: GetCommentsRequestBody
+  body: GetCommentsRequestBody,
+  options?: WebServiceClientOptions,
 ): Promise<GetCommentsResponse> {
-  return client.send({
-    descriptor: GET_COMMENTS,
-    body,
-  });
+  return client.send(
+    {
+      descriptor: GET_COMMENTS,
+      body,
+    },
+    options,
+  );
 }

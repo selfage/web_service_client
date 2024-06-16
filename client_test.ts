@@ -119,6 +119,35 @@ TEST_RUNNER.run({
       }
     })(),
     new (class implements TestCase {
+      public name = "GetCommentsTimeout";
+      private server: http.Server;
+      public async execute() {
+        // Prepare
+        let app = express();
+        this.server = await createServer(app);
+        app.post("/GetComments", express.json(), (req, res) => {
+          // Hang forever.
+        });
+
+        // Execute
+        await executeInPuppeteerAndAssertSuccess(
+          "test_data/get_comments_timeout_test",
+        );
+      }
+      public async tearDown() {
+        await closeServer(this.server);
+      }
+    })(),
+    new (class implements TestCase {
+      public name = "GetCommentsExhaustedRetries";
+      public async execute() {
+        // Execute
+        await executeInPuppeteerAndAssertSuccess(
+          "test_data/get_comments_retries_test",
+        );
+      }
+    })(),
+    new (class implements TestCase {
       public name = "GetHistory";
       private server: http.Server;
       public async execute() {
