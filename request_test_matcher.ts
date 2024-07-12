@@ -5,11 +5,7 @@ import { MatchFn, assert, assertThat, eq } from "@selfage/test_matcher";
 
 export function eqService(expected: ServiceDescriptor): MatchFn<any> {
   return (actualRequest) => {
-    assertThat(
-      actualRequest.serviceDescriptor,
-      eq(expected),
-      "service descriptor",
-    );
+    assertThat(actualRequest.descriptor, eq(expected), "service descriptor");
   };
 }
 
@@ -19,9 +15,7 @@ export function eqRequestMessageBody<T>(
 ): MatchFn<any> {
   return (actualRequest) => {
     assert(
-      Boolean(
-        (actualRequest.serviceDescriptor as ServiceDescriptor).body.messageType,
-      ),
+      Boolean((actualRequest.descriptor as ServiceDescriptor).body.messageType),
       "request body to be of message type",
       "not",
     );
@@ -39,9 +33,7 @@ export function eqRequestMetadata<T>(
 ): MatchFn<any> {
   return (actualRequest) => {
     assert(
-      Boolean(
-        (actualRequest.serviceDescriptor as ServiceDescriptor).metadata.type,
-      ),
+      Boolean((actualRequest.descriptor as ServiceDescriptor).metadata.type),
       "request metadata to exist",
       "not",
     );
