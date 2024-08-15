@@ -2,12 +2,22 @@ import express = require("express");
 import http = require("http");
 import {
   GET_COMMENTS_REQUEST_BODY,
-  GetCommentsResponse,
+  GET_COMMENTS_RESPONSE,
 } from "./test_data/get_comments";
-import { GET_HISTORY_REQUEST_BODY } from "./test_data/get_history";
-import { UPLOAD_FILE_REQUEST_METADATA } from "./test_data/upload_file";
+import {
+  GET_HISTORY_REQUEST_BODY,
+  GET_HISTORY_RESPONSE,
+} from "./test_data/get_history";
+import {
+  UPLOAD_FILE_REQUEST_METADATA,
+  UPLOAD_FILE_RESPONSE,
+} from "./test_data/upload_file";
 import { runInPuppeteer } from "@selfage/bundler_cli/runner_in_puppeteer";
 import { StatusCode } from "@selfage/http_error";
+import {
+  deserializeMessage,
+  serializeMessage,
+} from "@selfage/message/serializer";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { assertThat, eq } from "@selfage/test_matcher";
 import { TEST_RUNNER, TestCase } from "@selfage/test_runner";
@@ -37,7 +47,17 @@ async function createServer(app: express.Express): Promise<http.Server> {
 async function executeInPuppeteerAndAssertSuccess(
   testBodyFile: string,
 ): Promise<void> {
-  await runInPuppeteer(testBodyFile, ".", 8000, true, undefined, [ORIGIN]);
+  await runInPuppeteer(
+    testBodyFile,
+    ".",
+    8000,
+    true,
+    {
+      debug: true,
+      skipMinify: true,
+    },
+    [ORIGIN],
+  );
   assertThat(process.exitCode, eq(0), "exited without error");
 }
 
@@ -59,14 +79,16 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetComments", express.json(), (req, res) => {
+        app.post("/GetComments", express.raw(), (req, res) => {
           setCorsHeader(res);
           assertThat(
-            req.body,
+            deserializeMessage(req.body, GET_COMMENTS_REQUEST_BODY),
             eqMessage({ videoId: "aaaaa" }, GET_COMMENTS_REQUEST_BODY),
             "request body",
           );
-          res.json({ texts: ["1", "2", "3"] } as GetCommentsResponse);
+          res.end(
+            serializeMessage({ texts: ["1", "2", "3"] }, GET_COMMENTS_RESPONSE),
+          );
         });
 
         // Execute
@@ -83,7 +105,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetComments", express.json(), (req, res) => {
+        app.post("/GetComments", express.raw(), (req, res) => {
           setCorsHeader(res);
           res.sendStatus(StatusCode.InternalServerError);
         });
@@ -104,9 +126,9 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetComments", express.json(), (req, res) => {
+        app.post("/GetComments", express.raw(), (req, res) => {
           setCorsHeader(res);
-          res.send("random string");
+          res.end("random string");
         });
 
         // Execute
@@ -125,7 +147,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetComments", express.json(), (req, res) => {
+        app.post("/GetComments", express.raw(), (req, res) => {
           // Hang forever.
         });
 
@@ -154,15 +176,17 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetHistory", express.json(), (req, res) => {
+        app.post("/GetHistory", express.raw(), (req, res) => {
           setCorsHeader(res);
           assertThat(req.header("u"), eq("some session"), "request session");
           assertThat(
-            req.body,
+            deserializeMessage(req.body, GET_HISTORY_REQUEST_BODY),
             eqMessage({ page: 10 }, GET_HISTORY_REQUEST_BODY),
             `request body`,
           );
-          res.json({ videos: ["a", "b", "c"] });
+          res.end(
+            serializeMessage({ videos: ["a", "b", "c"] }, GET_HISTORY_RESPONSE),
+          );
         });
 
         // Execute
@@ -179,7 +203,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetHistory", express.json(), (req, res) => {
+        app.post("/GetHistory", express.raw(), (req, res) => {
           setCorsHeader(res);
           res.sendStatus(StatusCode.Unauthorized);
         });
@@ -217,7 +241,12 @@ TEST_RUNNER.run({
             "request side",
           );
           assertThat(req.body, eq("hahahah, random stuff"), "request body");
-          res.json({ byteSize: 10, success: true });
+          res.end(
+            serializeMessage(
+              { byteSize: 10, success: true },
+              UPLOAD_FILE_RESPONSE,
+            ),
+          );
         });
 
         // Execute

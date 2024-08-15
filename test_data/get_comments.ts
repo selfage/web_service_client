@@ -1,9 +1,9 @@
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
-import { ServiceDescriptor } from "@selfage/service_descriptor";
+import { RemoteCallDescriptor } from "@selfage/service_descriptor";
 import {
-  WebServiceClientInterface,
-  WebServiceClientOptions,
-} from "@selfage/service_descriptor/web_service_client_interface";
+  ClientInterface,
+  ClientOptions,
+} from "@selfage/service_descriptor/client_interface";
 
 export interface GetCommentsRequestBody {
   videoId?: string;
@@ -15,6 +15,7 @@ export let GET_COMMENTS_REQUEST_BODY: MessageDescriptor<GetCommentsRequestBody> 
     fields: [
       {
         name: "videoId",
+        index: 1,
         primitiveType: PrimitiveType.STRING,
       },
     ],
@@ -29,13 +30,14 @@ export let GET_COMMENTS_RESPONSE: MessageDescriptor<GetCommentsResponse> = {
   fields: [
     {
       name: "texts",
+      index: 1,
       primitiveType: PrimitiveType.STRING,
       isArray: true,
     },
   ],
 };
 
-export let GET_COMMENTS: ServiceDescriptor = {
+export let GET_COMMENTS: RemoteCallDescriptor = {
   name: "GetComments",
   path: "/GetComments",
   body: {
@@ -47,9 +49,9 @@ export let GET_COMMENTS: ServiceDescriptor = {
 };
 
 export function getComments(
-  client: WebServiceClientInterface,
+  client: ClientInterface,
   body: GetCommentsRequestBody,
-  options?: WebServiceClientOptions,
+  options?: ClientOptions,
 ): Promise<GetCommentsResponse> {
   return client.send(
     {

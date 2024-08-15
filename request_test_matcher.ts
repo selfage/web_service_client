@@ -1,9 +1,9 @@
 import { MessageDescriptor } from "@selfage/message/descriptor";
 import { eqMessage } from "@selfage/message/test_matcher";
-import { ServiceDescriptor } from "@selfage/service_descriptor";
+import { RemoteCallDescriptor } from "@selfage/service_descriptor";
 import { MatchFn, assert, assertThat, eq } from "@selfage/test_matcher";
 
-export function eqService(expected: ServiceDescriptor): MatchFn<any> {
+export function eqService(expected: RemoteCallDescriptor): MatchFn<any> {
   return (actualRequest) => {
     assertThat(actualRequest.descriptor, eq(expected), "service descriptor");
   };
@@ -15,7 +15,9 @@ export function eqRequestMessageBody<T>(
 ): MatchFn<any> {
   return (actualRequest) => {
     assert(
-      Boolean((actualRequest.descriptor as ServiceDescriptor).body.messageType),
+      Boolean(
+        (actualRequest.descriptor as RemoteCallDescriptor).body.messageType,
+      ),
       "request body to be of message type",
       "not",
     );
@@ -33,7 +35,7 @@ export function eqRequestMetadata<T>(
 ): MatchFn<any> {
   return (actualRequest) => {
     assert(
-      Boolean((actualRequest.descriptor as ServiceDescriptor).metadata.type),
+      Boolean((actualRequest.descriptor as RemoteCallDescriptor).metadata.type),
       "request metadata to exist",
       "not",
     );
