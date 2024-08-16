@@ -3,7 +3,7 @@ import { LocalSessionStorage } from "../local_session_storage";
 import { getComments } from "./get_comments";
 import { Counter } from "@selfage/counter";
 import { exit, getArgv } from "@selfage/puppeteer_test_executor_api";
-import { assertReject, assertThat, eq } from "@selfage/test_matcher";
+import { assertReject, assertThat, eq, eqError } from "@selfage/test_matcher";
 
 async function main() {
   // Prepare
@@ -12,7 +12,7 @@ async function main() {
   let counter = new Counter<string>();
   client.on("error", (error) => {
     counter.increment("onError");
-    assertThat(error.name, eq("BSONError"), "response error");
+    assertThat(error, eqError(new Error("Unable to parse")), "response error");
   });
 
   // Execute
@@ -20,7 +20,7 @@ async function main() {
 
   // Verify
   assertThat(counter.get("onError"), eq(1), `onError counter`);
-  assertThat(error.name, eq("BSONError"), "response error");
+  assertThat(error, eqError(new Error("Unable to parse")), "response error");
   exit();
 }
 

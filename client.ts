@@ -7,9 +7,9 @@ import {
   newUnauthorizedError,
 } from "@selfage/http_error";
 import {
-  deserializeMessage,
-  serializeMessage,
-} from "@selfage/message/serializer";
+  destringifyMessage,
+  stringifyMessage,
+} from "@selfage/message/stringifier";
 import {
   PrimitveTypeForBody,
   RemoteCallDescriptor,
@@ -92,14 +92,14 @@ export class WebServiceClient extends EventEmitter implements ClientInterface {
     if (request.metadata) {
       searchParams.set(
         remoteCallDescriptor.metadata.key,
-        JSON.stringify(request.metadata),
+        stringifyMessage(request.metadata, remoteCallDescriptor.metadata.type),
       );
     }
 
     let body: any;
     if (remoteCallDescriptor.body.messageType) {
-      headers.append("Content-Type", "application/octet-stream");
-      body = serializeMessage(
+      headers.append("Content-Type", "text/plain");
+      body = stringifyMessage(
         request.body,
         remoteCallDescriptor.body.messageType,
       );
@@ -137,16 +137,14 @@ export class WebServiceClient extends EventEmitter implements ClientInterface {
       throw new HttpError(httpResponse.status, errorMessage);
     }
 
-    let data: ArrayBuffer;
     try {
-      data = await httpResponse.arrayBuffer();
+      return destringifyMessage(
+        await httpResponse.text(),
+        remoteCallDescriptor.response.messageType,
+      );
     } catch (e) {
       throw new Error(`Unable to parse server response.`);
     }
-    return deserializeMessage(
-      new Uint8Array(data),
-      remoteCallDescriptor.response.messageType,
-    );
   }
 
   private async fetchWithTimeoutAndRetries(

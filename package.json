@@ -1,6 +1,6 @@
 {
   "name": "@selfage/web_service_client",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Http-based client to call services.",
   "repository": {
     "type": "git",
@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@selfage/http_error": "^1.1.1",
-    "@selfage/message": "^3.2.1",
+    "@selfage/message": "^3.3.0",
     "@selfage/service_descriptor": "^4.0.0",
     "@selfage/test_matcher": "^2.0.0"
   }
