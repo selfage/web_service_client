@@ -1,9 +1,9 @@
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
 import {
   PrimitveTypeForBody,
-  RemoteCallDescriptor,
+  WebRemoteCallDescriptor,
 } from "@selfage/service_descriptor";
-import { ClientInterface } from "@selfage/service_descriptor/client_interface";
+import { WebClientInterface } from "@selfage/service_descriptor/client_interface";
 
 export interface UploadFileRequestMetadata {
   fileName: string;
@@ -42,7 +42,7 @@ export let UPLOAD_FILE_RESPONSE: MessageDescriptor<UploadFileResponse> = {
   ],
 };
 
-export let UPLOAD_FILE: RemoteCallDescriptor = {
+export let UPLOAD_FILE: WebRemoteCallDescriptor = {
   name: "UploadFile",
   path: "/UploadFile",
   metadata: {
@@ -58,7 +58,7 @@ export let UPLOAD_FILE: RemoteCallDescriptor = {
 };
 
 export function uploadFile(
-  client: ClientInterface,
+  client: WebClientInterface,
   body: Blob,
   metadata: UploadFileRequestMetadata,
 ): Promise<UploadFileResponse> {

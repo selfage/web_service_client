@@ -1,6 +1,6 @@
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
-import { RemoteCallDescriptor } from "@selfage/service_descriptor";
-import { ClientInterface } from "@selfage/service_descriptor/client_interface";
+import { WebRemoteCallDescriptor } from "@selfage/service_descriptor";
+import { WebClientInterface } from "@selfage/service_descriptor/client_interface";
 
 export interface MySession {
   sessionId?: string;
@@ -55,7 +55,7 @@ export let GET_HISTORY_RESPONSE: MessageDescriptor<GetHistoryResponse> = {
   ],
 };
 
-export let GET_HISTORY: RemoteCallDescriptor = {
+export let GET_HISTORY: WebRemoteCallDescriptor = {
   name: "GetHistory",
   path: "/GetHistory",
   auth: {
@@ -71,7 +71,7 @@ export let GET_HISTORY: RemoteCallDescriptor = {
 };
 
 export function getHistory(
-  client: ClientInterface,
+  client: WebClientInterface,
   body: GetHistoryRequestBody,
 ): Promise<GetHistoryResponse> {
   return client.send({

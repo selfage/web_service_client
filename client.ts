@@ -12,11 +12,11 @@ import {
 } from "@selfage/message/stringifier";
 import {
   PrimitveTypeForBody,
-  RemoteCallDescriptor,
+  WebRemoteCallDescriptor,
 } from "@selfage/service_descriptor";
 import {
-  ClientInterface,
-  ClientOptions,
+  WebClientInterface,
+  WebClientOptions,
 } from "@selfage/service_descriptor/client_interface";
 
 export interface WebServiceClient {
@@ -32,7 +32,10 @@ export interface WebServiceClient {
   on(event: "error", listener: (error: any) => Promise<void> | void): this;
 }
 
-export class WebServiceClient extends EventEmitter implements ClientInterface {
+export class WebServiceClient
+  extends EventEmitter
+  implements WebClientInterface
+{
   public static create(sessionStorage: SessionStorage): WebServiceClient {
     return new WebServiceClient(
       sessionStorage,
@@ -55,7 +58,10 @@ export class WebServiceClient extends EventEmitter implements ClientInterface {
     super();
   }
 
-  public async send(request: any, options: ClientOptions = {}): Promise<any> {
+  public async send(
+    request: any,
+    options: WebClientOptions = {},
+  ): Promise<any> {
     try {
       return await this.sendOrThrowErrors(request, options);
     } catch (e) {
@@ -76,9 +82,9 @@ export class WebServiceClient extends EventEmitter implements ClientInterface {
 
   private async sendOrThrowErrors(
     request: any,
-    options: ClientOptions,
+    options: WebClientOptions,
   ): Promise<any> {
-    let remoteCallDescriptor = request.descriptor as RemoteCallDescriptor;
+    let remoteCallDescriptor = request.descriptor as WebRemoteCallDescriptor;
     let headers = new Headers();
     if (remoteCallDescriptor.auth) {
       let signedUserSession = await this.sessionStorage.read();

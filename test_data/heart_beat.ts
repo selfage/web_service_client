@@ -1,7 +1,7 @@
 import { StreamMessageController } from "../stream_message_controller";
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
-import { RemoteCallDescriptor } from "@selfage/service_descriptor";
-import { ClientInterface } from "@selfage/service_descriptor/client_interface";
+import { WebRemoteCallDescriptor } from "@selfage/service_descriptor";
+import { WebClientInterface } from "@selfage/service_descriptor/client_interface";
 
 export interface HeartBeatStreamRequestBody {
   rnd?: number;
@@ -26,7 +26,7 @@ export let HEART_BEAT_RESPONSE: MessageDescriptor<HeartBeatResponse> = {
   fields: [],
 };
 
-export let HEART_BEAT: RemoteCallDescriptor = {
+export let HEART_BEAT: WebRemoteCallDescriptor = {
   name: "HeartBeat",
   path: "/HeartBeat",
   body: {
@@ -38,7 +38,7 @@ export let HEART_BEAT: RemoteCallDescriptor = {
 };
 
 export function heartBeat(
-  client: ClientInterface,
+  client: WebClientInterface,
   body: StreamMessageController<HeartBeatStreamRequestBody>,
 ): Promise<HeartBeatResponse> {
   return client.send({
