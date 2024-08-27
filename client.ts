@@ -7,9 +7,10 @@ import {
   newUnauthorizedError,
 } from "@selfage/http_error";
 import {
-  destringifyMessage,
-  stringifyMessage,
-} from "@selfage/message/stringifier";
+  deserializeMessage,
+  serializeMessage,
+} from "@selfage/message/serializer";
+import { stringifyMessage } from "@selfage/message/stringifier";
 import {
   PrimitveTypeForBody,
   WebRemoteCallDescriptor,
@@ -104,19 +105,11 @@ export class WebServiceClient
 
     let body: any;
     if (remoteCallDescriptor.body.messageType) {
-      headers.append("Content-Type", "text/plain");
-      body = stringifyMessage(
+      headers.append("Content-Type", "application/octet-stream");
+      body = serializeMessage(
         request.body,
         remoteCallDescriptor.body.messageType,
       );
-    } else if (remoteCallDescriptor.body.streamMessageType) {
-      headers.append("Content-Type", "application/octet-stream");
-      body = new ReadableStream({
-        start(controller) {
-          request.body.on("data", (chunk: string) => controller.enqueue(chunk));
-          request.body.on("end", () => controller.close());
-        },
-      });
     } else if (
       remoteCallDescriptor.body.primitiveType === PrimitveTypeForBody.BYTES
     ) {
@@ -144,8 +137,8 @@ export class WebServiceClient
     }
 
     try {
-      return destringifyMessage(
-        await httpResponse.text(),
+      return deserializeMessage(
+        new Uint8Array(await httpResponse.arrayBuffer()),
         remoteCallDescriptor.response.messageType,
       );
     } catch (e) {
