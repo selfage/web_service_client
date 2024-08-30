@@ -40,8 +40,8 @@
   },
   "dependencies": {
     "@selfage/http_error": "^1.1.1",
-    "@selfage/message": "^3.4.0",
-    "@selfage/service_descriptor": "^4.1.1",
+    "@selfage/message": "^3.5.2",
+    "@selfage/service_descriptor": "^4.2.0",
     "@selfage/test_matcher": "^2.0.0"
   }
 }
