@@ -87,12 +87,12 @@ export class WebServiceClient
   ): Promise<any> {
     let remoteCallDescriptor = request.descriptor as WebRemoteCallDescriptor;
     let headers = new Headers();
-    if (remoteCallDescriptor.auth) {
-      let signedUserSession = await this.sessionStorage.read();
-      if (!signedUserSession) {
+    if (remoteCallDescriptor.sessionKey) {
+      let sessionStr = await this.sessionStorage.read();
+      if (!sessionStr) {
         throw newUnauthorizedError("No user session found.");
       }
-      headers.append(remoteCallDescriptor.auth.key, signedUserSession);
+      headers.append(remoteCallDescriptor.sessionKey, sessionStr);
     }
 
     let searchParams = new URLSearchParams();
