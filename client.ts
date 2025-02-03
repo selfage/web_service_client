@@ -119,7 +119,7 @@ export class WebServiceClient extends EventEmitter {
 
     let baseUrl = this.baseUrlsMap.get(request.descriptor.serviceName);
     if (!baseUrl) {
-      throw newBadRequestError(
+      throw new Error(
         `No base url found for service ${request.descriptor.serviceName}.`,
       );
     }
