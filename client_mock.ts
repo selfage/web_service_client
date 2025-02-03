@@ -6,7 +6,7 @@ export class WebServiceClientMock extends WebServiceClient {
   public response: any; // to return;
 
   public constructor() {
-    super(undefined, undefined, undefined);
+    super(undefined, undefined, undefined, undefined);
   }
   public async send(request: any): Promise<any> {
     this.request = request;

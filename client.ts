@@ -11,14 +11,14 @@ import {
   serializeMessage,
 } from "@selfage/message/serializer";
 import { stringifyMessage } from "@selfage/message/stringifier";
-import {
-  PrimitveTypeForBody,
-  WebRemoteCallDescriptor,
-} from "@selfage/service_descriptor";
-import {
-  WebClientInterface,
-  WebClientOptions,
-} from "@selfage/service_descriptor/client_interface";
+import { PrimitveTypeForBody } from "@selfage/service_descriptor";
+import { ClientRequestInterface } from "@selfage/service_descriptor/client_request_interface";
+
+export interface WebClientOptions {
+  keepAlive?: boolean; // Refers to the keepalive option in fetch.
+  retries?: number;
+  timeout?: number;
+}
 
 export interface WebServiceClient {
   // When server finished response with an unauthenticated error, i.e., 401
@@ -33,23 +33,22 @@ export interface WebServiceClient {
   on(event: "error", listener: (error: any) => Promise<void> | void): this;
 }
 
-export class WebServiceClient
-  extends EventEmitter
-  implements WebClientInterface
-{
-  public static create(sessionStorage: SessionStorage): WebServiceClient {
+export class WebServiceClient extends EventEmitter {
+  public static create(
+    sessionStorage: SessionStorage,
+    baseUrlsMap: Map<string, string>,
+  ): WebServiceClient {
     return new WebServiceClient(
       sessionStorage,
+      baseUrlsMap,
       (callback, ms) => setTimeout(callback, ms),
       window.fetch.bind(window),
     );
   }
 
-  // Include origin and path, prior to any remote call path.
-  public baseUrl: string;
-
   public constructor(
     private sessionStorage: SessionStorage,
+    private baseUrlsMap: Map<string, string>,
     private setTimeout: (callback: Function, ms: number) => number,
     private fetch: (
       input: RequestInfo,
@@ -59,10 +58,10 @@ export class WebServiceClient
     super();
   }
 
-  public async send(
-    request: any,
+  public async send<Response>(
+    request: ClientRequestInterface<Response>,
     options: WebClientOptions = {},
-  ): Promise<any> {
+  ): Promise<Response> {
     try {
       return await this.sendOrThrowErrors(request, options);
     } catch (e) {
@@ -82,36 +81,35 @@ export class WebServiceClient
   }
 
   private async sendOrThrowErrors(
-    request: any,
+    request: ClientRequestInterface<any>,
     options: WebClientOptions,
   ): Promise<any> {
-    let remoteCallDescriptor = request.descriptor as WebRemoteCallDescriptor;
     let headers = new Headers();
-    if (remoteCallDescriptor.sessionKey) {
-      let sessionStr = await this.sessionStorage.read();
-      if (!sessionStr) {
-        throw newUnauthorizedError("No user session found.");
+    if (request.descriptor.authKey) {
+      let authStr = await this.sessionStorage.read();
+      if (!authStr) {
+        throw newUnauthorizedError("No authorization string stored.");
       }
-      headers.append(remoteCallDescriptor.sessionKey, sessionStr);
+      headers.append(request.descriptor.authKey, authStr);
     }
 
     let searchParams = new URLSearchParams();
     if (request.metadata) {
       searchParams.set(
-        remoteCallDescriptor.metadata.key,
-        stringifyMessage(request.metadata, remoteCallDescriptor.metadata.type),
+        request.descriptor.metadata.key,
+        stringifyMessage(request.metadata, request.descriptor.metadata.type),
       );
     }
 
     let body: any;
-    if (remoteCallDescriptor.body.messageType) {
+    if (request.descriptor.body.messageType) {
       headers.append("Content-Type", "application/octet-stream");
       body = serializeMessage(
         request.body,
-        remoteCallDescriptor.body.messageType,
+        request.descriptor.body.messageType,
       );
     } else if (
-      remoteCallDescriptor.body.primitiveType === PrimitveTypeForBody.BYTES
+      request.descriptor.body.primitiveType === PrimitveTypeForBody.BYTES
     ) {
       headers.append("Content-Type", "application/octet-stream");
       body = request.body;
@@ -119,8 +117,14 @@ export class WebServiceClient
       throw newBadRequestError("Unsupported client request body.");
     }
 
+    let baseUrl = this.baseUrlsMap.get(request.descriptor.serviceName);
+    if (!baseUrl) {
+      throw newBadRequestError(
+        `No base url found for service ${request.descriptor.serviceName}.`,
+      );
+    }
     let httpResponse = await this.fetchWithTimeoutAndRetries(
-      remoteCallDescriptor.path,
+      `${baseUrl}${request.descriptor.path}`,
       searchParams,
       body,
       headers,
@@ -139,7 +143,7 @@ export class WebServiceClient
     try {
       return deserializeMessage(
         new Uint8Array(await httpResponse.arrayBuffer()),
-        remoteCallDescriptor.response.messageType,
+        request.descriptor.response.messageType,
       );
     } catch (e) {
       throw new Error(`Unable to parse server response.`);
@@ -147,7 +151,7 @@ export class WebServiceClient
   }
 
   private async fetchWithTimeoutAndRetries(
-    path: string,
+    url: string,
     searchParams: URLSearchParams,
     body: any,
     headers: Headers,
@@ -164,7 +168,7 @@ export class WebServiceClient
           signal = abortController.signal;
           this.setTimeout(() => abortController.abort(), timeout);
         }
-        return await this.fetch(`${this.baseUrl}${path}?${searchParams}`, {
+        return await this.fetch(`${url}?${searchParams}`, {
           method: "POST",
           body,
           headers,

@@ -1,6 +1,6 @@
 import { WebServiceClient } from "../client";
 import { LocalSessionStorage } from "../local_session_storage";
-import { getHistory } from "./get_history";
+import { newGetHistoryRequest } from "./get_history";
 import { Counter } from "@selfage/counter";
 import { newUnauthorizedError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
@@ -9,8 +9,11 @@ import { assertReject, assertThat, eq } from "@selfage/test_matcher";
 
 async function main() {
   // Prepare
-  let client = WebServiceClient.create(new LocalSessionStorage());
-  client.baseUrl = getArgv()[0];
+  let origin = getArgv()[0];
+  let client = WebServiceClient.create(
+    new LocalSessionStorage(),
+    new Map([["HistoryService", origin]]),
+  );
   let counter = new Counter<string>();
   client.on("unauthenticated", () => {
     counter.increment("onUnauthenticated");
@@ -19,13 +22,15 @@ async function main() {
     counter.increment("onHttpError");
     assertThat(
       error,
-      eqHttpError(newUnauthorizedError("No user session")),
+      eqHttpError(newUnauthorizedError("No authorization string")),
       "error",
     );
   });
 
   // Execute
-  let error = await assertReject(getHistory(client, { page: 11 }));
+  let error = await assertReject(
+    client.send(newGetHistoryRequest({ page: 11 })),
+  );
 
   // Verify
   assertThat(counter.get("onHttpError"), eq(1), "onHttpError counter");
@@ -36,7 +41,7 @@ async function main() {
   );
   assertThat(
     error,
-    eqHttpError(newUnauthorizedError("No user session")),
+    eqHttpError(newUnauthorizedError("No authorization string")),
     "error",
   );
   exit();

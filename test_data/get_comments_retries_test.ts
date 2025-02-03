@@ -1,14 +1,17 @@
 import { WebServiceClient } from "../client";
 import { LocalSessionStorage } from "../local_session_storage";
-import { getComments } from "./get_comments";
+import { newGetCommentsRequest } from "./get_comments";
 import { Counter } from "@selfage/counter";
 import { exit, getArgv } from "@selfage/puppeteer_test_executor_api";
 import { assertReject, assertThat, eq, eqError } from "@selfage/test_matcher";
 
 async function main() {
   // Prepare
-  let client = WebServiceClient.create(new LocalSessionStorage());
-  client.baseUrl = getArgv()[0];
+  let origin = getArgv()[0];
+  let client = WebServiceClient.create(
+    new LocalSessionStorage(),
+    new Map([["CommentsService", origin]]),
+  );
   let counter = new Counter<string>();
   client.on("error", (error) => {
     counter.increment("onError");
@@ -21,13 +24,9 @@ async function main() {
 
   // Execute
   let error = await assertReject(
-    getComments(
-      client,
-      { videoId: "any" },
-      {
-        retries: 3,
-      },
-    ),
+    client.send(newGetCommentsRequest({ videoId: "any" }), {
+      retries: 3,
+    }),
   );
 
   // Verify
