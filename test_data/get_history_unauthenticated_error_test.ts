@@ -5,6 +5,7 @@ import { Counter } from "@selfage/counter";
 import { newUnauthorizedError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { exit, getArgv } from "@selfage/puppeteer_test_executor_api";
+import { ClientType } from "@selfage/service_descriptor/client_type";
 import { assertReject, assertThat, eq } from "@selfage/test_matcher";
 
 async function main() {
@@ -12,10 +13,10 @@ async function main() {
   let origin = getArgv()[0];
   let sessionStorage = new LocalSessionStorage();
   sessionStorage.save("some session");
-  let client = WebServiceClient.create(
-    sessionStorage,
-    new Map([["HistoryService", origin]]),
-  );
+  let client = WebServiceClient.create(sessionStorage, {
+    clientType: ClientType.WEB,
+    nameToEndpoints: new Map([["WebService", { origin, path: "" }]]),
+  });
   let counter = new Counter<string>();
   client.on("unauthenticated", () => {
     counter.increment("onUnauthenticated");

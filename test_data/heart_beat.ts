@@ -1,4 +1,5 @@
 import { StreamMessageController } from "../stream_message_controller";
+import { WEB_SERVICE } from "./web_service";
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
 import { RemoteCallDescriptor } from "@selfage/service_descriptor";
 import { ClientRequestInterface } from "@selfage/service_descriptor/client_request_interface";
@@ -28,7 +29,7 @@ export let HEART_BEAT_RESPONSE: MessageDescriptor<HeartBeatResponse> = {
 
 export let HEART_BEAT: RemoteCallDescriptor = {
   name: "HeartBeat",
-  serviceName: "HeartBeatService",
+  service: WEB_SERVICE,
   path: "/HeartBeat",
   body: {
     streamMessageType: HEART_BEAT_STREAM_REQUEST_BODY,

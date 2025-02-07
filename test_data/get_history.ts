@@ -1,3 +1,4 @@
+import { WEB_SERVICE } from "./web_service";
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
 import { RemoteCallDescriptor } from "@selfage/service_descriptor";
 import { ClientRequestInterface } from "@selfage/service_descriptor/client_request_interface";
@@ -36,7 +37,7 @@ export let GET_HISTORY_RESPONSE: MessageDescriptor<GetHistoryResponse> = {
 
 export let GET_HISTORY: RemoteCallDescriptor = {
   name: "GetHistory",
-  serviceName: "HistoryService",
+  service: WEB_SERVICE,
   path: "/GetHistory",
   authKey: "u",
   body: {

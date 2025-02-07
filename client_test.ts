@@ -12,6 +12,7 @@ import {
   UPLOAD_FILE_REQUEST_METADATA,
   UPLOAD_FILE_RESPONSE,
 } from "./test_data/upload_file";
+import { WEB_SERVICE } from "./test_data/web_service";
 import { runInPuppeteer } from "@selfage/bundler_cli/runner_in_puppeteer";
 import { StatusCode } from "@selfage/http_error";
 import {
@@ -23,9 +24,7 @@ import { eqMessage } from "@selfage/message/test_matcher";
 import { assertThat, eq } from "@selfage/test_matcher";
 import { TEST_RUNNER, TestCase } from "@selfage/test_runner";
 
-let HOST_NAME = "localhost";
-let PORT = 8080;
-let ORIGIN = `http://${HOST_NAME}:${PORT}`;
+let HOST_NAME = "http://localhost";
 
 function setCorsHeader(res: express.Response): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -36,7 +35,7 @@ function setCorsHeader(res: express.Response): void {
 async function createServer(app: express.Express): Promise<http.Server> {
   let server = http.createServer(app);
   await new Promise<void>((resolve) => {
-    server.listen({ host: HOST_NAME, port: PORT }, () => resolve());
+    server.listen(WEB_SERVICE.port, () => resolve());
   });
   app.options("/*", (req, res) => {
     setCorsHeader(res);
@@ -57,7 +56,7 @@ async function executeInPuppeteerAndAssertSuccess(
       debug: true,
       skipMinify: true,
     },
-    [ORIGIN],
+    [HOST_NAME],
   );
   assertThat(process.exitCode, eq(0), "exited without error");
 }

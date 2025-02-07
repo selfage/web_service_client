@@ -13,6 +13,7 @@ import {
 import { stringifyMessage } from "@selfage/message/stringifier";
 import { PrimitveTypeForBody } from "@selfage/service_descriptor";
 import { ClientRequestInterface } from "@selfage/service_descriptor/client_request_interface";
+import { WebServiceRegistry } from "@selfage/service_descriptor/registry";
 
 export interface WebClientOptions {
   keepAlive?: boolean; // Refers to the keepalive option in fetch.
@@ -36,11 +37,11 @@ export interface WebServiceClient {
 export class WebServiceClient extends EventEmitter {
   public static create(
     sessionStorage: SessionStorage,
-    baseUrlsMap: Map<string, string>,
+    serviceRegistry: WebServiceRegistry,
   ): WebServiceClient {
     return new WebServiceClient(
       sessionStorage,
-      baseUrlsMap,
+      serviceRegistry,
       (callback, ms) => setTimeout(callback, ms),
       window.fetch.bind(window),
     );
@@ -48,7 +49,7 @@ export class WebServiceClient extends EventEmitter {
 
   public constructor(
     private sessionStorage: SessionStorage,
-    private baseUrlsMap: Map<string, string>,
+    private serviceRegistry: WebServiceRegistry,
     private setTimeout: (callback: Function, ms: number) => number,
     private fetch: (
       input: RequestInfo,
@@ -84,6 +85,14 @@ export class WebServiceClient extends EventEmitter {
     request: ClientRequestInterface<any>,
     options: WebClientOptions,
   ): Promise<any> {
+    if (
+      request.descriptor.service.clientType !== this.serviceRegistry.clientType
+    ) {
+      throw new Error(
+        `Request is for client type ${request.descriptor.service.clientType}, but the client's type is ${this.serviceRegistry.clientType}.`,
+      );
+    }
+
     let headers = new Headers();
     if (request.descriptor.authKey) {
       let authStr = await this.sessionStorage.read();
@@ -117,14 +126,16 @@ export class WebServiceClient extends EventEmitter {
       throw newBadRequestError("Unsupported client request body.");
     }
 
-    let baseUrl = this.baseUrlsMap.get(request.descriptor.serviceName);
-    if (!baseUrl) {
+    let endpoint = this.serviceRegistry.nameToEndpoints.get(
+      request.descriptor.service.name,
+    );
+    if (!endpoint) {
       throw new Error(
-        `No base url found for service ${request.descriptor.serviceName}.`,
+        `No endpoint found for service ${request.descriptor.service.name}.`,
       );
     }
     let httpResponse = await this.fetchWithTimeoutAndRetries(
-      `${baseUrl}${request.descriptor.path}`,
+      `${endpoint.origin}:${request.descriptor.service.port}${endpoint.path}${request.descriptor.path}`,
       searchParams,
       body,
       headers,

@@ -1,3 +1,4 @@
+import { WEB_SERVICE } from "./web_service";
 import { MessageDescriptor, PrimitiveType } from "@selfage/message/descriptor";
 import {
   PrimitveTypeForBody,
@@ -44,7 +45,7 @@ export let UPLOAD_FILE_RESPONSE: MessageDescriptor<UploadFileResponse> = {
 
 export let UPLOAD_FILE: RemoteCallDescriptor = {
   name: "UploadFile",
-  serviceName: "FileService",
+  service: WEB_SERVICE,
   path: "/UploadFile",
   metadata: {
     key: "sd",
