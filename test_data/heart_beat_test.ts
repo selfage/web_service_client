@@ -7,10 +7,10 @@ import { ClientType } from "@selfage/service_descriptor/client_type";
 
 async function main() {
   // Prepare
-  let origin = getArgv()[0];
+  let hostname = getArgv()[0];
   let client = WebServiceClient.create(new LocalSessionStorage(), {
     clientType: ClientType.WEB,
-    nameToEndpoints: new Map([["WebService", { origin, path: "" }]]),
+    nameToHostnames: new Map([["WebService", hostname]]),
   });
 
   // Execute

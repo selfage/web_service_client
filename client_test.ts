@@ -24,7 +24,7 @@ import { eqMessage } from "@selfage/message/test_matcher";
 import { assertThat, eq } from "@selfage/test_matcher";
 import { TEST_RUNNER, TestCase } from "@selfage/test_runner";
 
-let HOST_NAME = "http://localhost";
+let HOSTNAME = "localhost";
 
 function setCorsHeader(res: express.Response): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -56,7 +56,7 @@ async function executeInPuppeteerAndAssertSuccess(
       debug: true,
       skipMinify: true,
     },
-    [HOST_NAME],
+    [HOSTNAME],
   );
   assertThat(process.exitCode, eq(0), "exited without error");
 }

@@ -10,12 +10,12 @@ import { assertReject, assertThat, eq } from "@selfage/test_matcher";
 
 async function main() {
   // Prepare
-  let origin = getArgv()[0];
+  let hostname = getArgv()[0];
   let sessionStorage = new LocalSessionStorage();
   sessionStorage.save("some session");
   let client = WebServiceClient.create(sessionStorage, {
     clientType: ClientType.WEB,
-    nameToEndpoints: new Map([["WebService", { origin, path: "" }]]),
+    nameToHostnames: new Map([["WebService", hostname]]),
   });
   let counter = new Counter<string>();
   client.on("unauthenticated", () => {

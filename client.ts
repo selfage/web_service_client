@@ -126,16 +126,16 @@ export class WebServiceClient extends EventEmitter {
       throw newBadRequestError("Unsupported client request body.");
     }
 
-    let endpoint = this.serviceRegistry.nameToEndpoints.get(
+    let hostname = this.serviceRegistry.nameToHostnames.get(
       request.descriptor.service.name,
     );
-    if (!endpoint) {
+    if (!hostname) {
       throw new Error(
-        `No endpoint found for service ${request.descriptor.service.name}.`,
+        `No hostname found for service ${request.descriptor.service.name}.`,
       );
     }
     let httpResponse = await this.fetchWithTimeoutAndRetries(
-      `${endpoint.origin}:${request.descriptor.service.port}${endpoint.path}${request.descriptor.path}`,
+      `${request.descriptor.service.protocol}${hostname}:${request.descriptor.service.port}${request.descriptor.path}`,
       searchParams,
       body,
       headers,

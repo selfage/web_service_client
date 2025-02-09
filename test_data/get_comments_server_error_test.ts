@@ -10,10 +10,10 @@ import { assertReject, assertThat, eq } from "@selfage/test_matcher";
 
 async function main() {
   // Prepare
-  let origin = getArgv()[0];
+  let hostname = getArgv()[0];
   let client = WebServiceClient.create(new LocalSessionStorage(), {
     clientType: ClientType.WEB,
-    nameToEndpoints: new Map([["WebService", { origin, path: "" }]]),
+    nameToHostnames: new Map([["WebService", hostname]]),
   });
   let counter = new Counter<string>();
   client.on("httpError", (error) => {
