@@ -135,7 +135,7 @@ export class WebServiceClient extends EventEmitter {
       );
     }
     let httpResponse = await this.fetchWithTimeoutAndRetries(
-      `${request.descriptor.service.protocol}${hostname}:${request.descriptor.service.port}${request.descriptor.path}`,
+      `${request.descriptor.service.protocol}://${hostname}:${request.descriptor.service.port}${request.descriptor.path}`,
       searchParams,
       body,
       headers,
