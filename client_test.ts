@@ -12,7 +12,6 @@ import {
   UPLOAD_FILE_REQUEST_METADATA,
   UPLOAD_FILE_RESPONSE,
 } from "./test_data/upload_file";
-import { WEB_SERVICE } from "./test_data/web_service";
 import { runInPuppeteer } from "@selfage/bundler_cli/runner_in_puppeteer";
 import { StatusCode } from "@selfage/http_error";
 import {
@@ -24,7 +23,7 @@ import { eqMessage } from "@selfage/message/test_matcher";
 import { assertThat, eq } from "@selfage/test_matcher";
 import { TEST_RUNNER, TestCase } from "@selfage/test_runner";
 
-let HOSTNAME = "localhost";
+let ORIGIN = "http://localhost:8080";
 
 function setCorsHeader(res: express.Response): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -35,7 +34,7 @@ function setCorsHeader(res: express.Response): void {
 async function createServer(app: express.Express): Promise<http.Server> {
   let server = http.createServer(app);
   await new Promise<void>((resolve) => {
-    server.listen(WEB_SERVICE.port, () => resolve());
+    server.listen(8080, () => resolve());
   });
   app.options("/*", (req, res) => {
     setCorsHeader(res);
@@ -56,7 +55,7 @@ async function executeInPuppeteerAndAssertSuccess(
       debug: true,
       skipMinify: true,
     },
-    [HOSTNAME],
+    [ORIGIN],
   );
   assertThat(process.exitCode, eq(0), "exited without error");
 }
@@ -79,7 +78,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetComments", express.raw(), (req, res) => {
+        app.post("/web/GetComments", express.raw(), (req, res) => {
           setCorsHeader(res);
           assertThat(
             deserializeMessage(req.body, GET_COMMENTS_REQUEST_BODY),
@@ -105,7 +104,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetComments", express.raw(), (req, res) => {
+        app.post("/web/GetComments", express.raw(), (req, res) => {
           setCorsHeader(res);
           res.sendStatus(StatusCode.InternalServerError);
         });
@@ -126,7 +125,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetComments", express.raw(), (req, res) => {
+        app.post("/web/GetComments", express.raw(), (req, res) => {
           setCorsHeader(res);
           res.end("random string");
         });
@@ -147,7 +146,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetComments", express.raw(), (req, res) => {
+        app.post("/web/GetComments", express.raw(), (req, res) => {
           // Hang forever.
         });
 
@@ -176,7 +175,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetHistory", express.raw(), (req, res) => {
+        app.post("/web/GetHistory", express.raw(), (req, res) => {
           setCorsHeader(res);
           assertThat(req.header("u"), eq("some session"), "request session");
           assertThat(
@@ -203,7 +202,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/GetHistory", express.raw(), (req, res) => {
+        app.post("/web/GetHistory", express.raw(), (req, res) => {
           setCorsHeader(res);
           res.sendStatus(StatusCode.Unauthorized);
         });
@@ -233,7 +232,7 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/UploadFile", express.text({ type: "*/*" }), (req, res) => {
+        app.post("/web/UploadFile", express.text({ type: "*/*" }), (req, res) => {
           setCorsHeader(res);
           assertThat(
             destringifyMessage(

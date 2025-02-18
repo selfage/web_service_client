@@ -3,16 +3,12 @@ import { LocalSessionStorage } from "../local_session_storage";
 import { newGetCommentsRequest } from "./get_comments";
 import { Counter } from "@selfage/counter";
 import { exit, getArgv } from "@selfage/puppeteer_test_executor_api";
-import { ClientType } from "@selfage/service_descriptor/client_type";
 import { assertReject, assertThat, eq, eqError } from "@selfage/test_matcher";
 
 async function main() {
   // Prepare
-  let hostname = getArgv()[0];
-  let client = WebServiceClient.create(new LocalSessionStorage(), {
-    clientType: ClientType.WEB,
-    nameToHostnames: new Map([["WebService", hostname]]),
-  });
+  let origin = getArgv()[0];
+  let client = WebServiceClient.create(new LocalSessionStorage(), origin);
   let counter = new Counter<string>();
   client.on("error", (error) => {
     counter.increment("onError");

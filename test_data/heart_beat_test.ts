@@ -3,15 +3,11 @@ import { LocalSessionStorage } from "../local_session_storage";
 import { StreamMessageController } from "../stream_message_controller";
 import { HeartBeatStreamRequestBody, newHeartBeatRequest } from "./heart_beat";
 import { exit, getArgv } from "@selfage/puppeteer_test_executor_api";
-import { ClientType } from "@selfage/service_descriptor/client_type";
 
 async function main() {
   // Prepare
-  let hostname = getArgv()[0];
-  let client = WebServiceClient.create(new LocalSessionStorage(), {
-    clientType: ClientType.WEB,
-    nameToHostnames: new Map([["WebService", hostname]]),
-  });
+  let origin = getArgv()[0];
+  let client = WebServiceClient.create(new LocalSessionStorage(), origin);
 
   // Execute
   let streamMessageController =
