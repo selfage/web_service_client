@@ -1,6 +1,6 @@
 {
   "name": "@selfage/web_service_client",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "HTTP Client to make remote call to services from browsers.",
   "repository": {
     "type": "git",

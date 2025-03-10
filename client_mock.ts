@@ -2,7 +2,7 @@ import { WebClientOptions, WebServiceClient } from "./client";
 import { ClientRequestInterface } from "@selfage/service_descriptor/client_request_interface";
 
 export class WebServiceClientMock extends WebServiceClient {
-  public request: any; // captured
+  public request: ClientRequestInterface<any>; // captured
   public error: Error; // to throw
   public response: any; // to return;
 
