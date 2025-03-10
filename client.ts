@@ -60,7 +60,7 @@ export class WebServiceClient extends EventEmitter {
 
   public async send<Response>(
     request: ClientRequestInterface<Response>,
-    options: WebClientOptions = {},
+    options?: WebClientOptions,
   ): Promise<Response> {
     try {
       return await this.sendOrThrowErrors(request, options);
@@ -82,7 +82,7 @@ export class WebServiceClient extends EventEmitter {
 
   private async sendOrThrowErrors(
     request: ClientRequestInterface<any>,
-    options: WebClientOptions,
+    options: WebClientOptions = {},
   ): Promise<any> {
     let headers = new Headers();
     if (request.descriptor.authKey) {

@@ -1,4 +1,5 @@
-import { WebServiceClient } from "./client";
+import { WebClientOptions, WebServiceClient } from "./client";
+import { ClientRequestInterface } from "@selfage/service_descriptor/client_request_interface";
 
 export class WebServiceClientMock extends WebServiceClient {
   public request: any; // captured
@@ -8,7 +9,10 @@ export class WebServiceClientMock extends WebServiceClient {
   public constructor() {
     super(undefined, undefined, undefined, undefined);
   }
-  public async send(request: any): Promise<any> {
+  public async send(
+    request: ClientRequestInterface<any>,
+    options?: WebClientOptions,
+  ): Promise<any> {
     this.request = request;
     if (this.error) {
       throw this.error;
