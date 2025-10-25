@@ -232,24 +232,28 @@ TEST_RUNNER.run({
         // Prepare
         let app = express();
         this.server = await createServer(app);
-        app.post("/web/UploadFile", express.text({ type: "*/*" }), (req, res) => {
-          setCorsHeader(res);
-          assertThat(
-            destringifyMessage(
-              req.query["sd"] as string,
-              UPLOAD_FILE_REQUEST_METADATA,
-            ),
-            eqMessage({ fileName: "file1" }, UPLOAD_FILE_REQUEST_METADATA),
-            "request side",
-          );
-          assertThat(req.body, eq("hahahah, random stuff"), "request body");
-          res.end(
-            serializeMessage(
-              { byteSize: 10, success: true },
-              UPLOAD_FILE_RESPONSE,
-            ),
-          );
-        });
+        app.post(
+          "/web/UploadFile",
+          express.text({ type: "*/*" }),
+          (req, res) => {
+            setCorsHeader(res);
+            assertThat(
+              destringifyMessage(
+                req.query["sd"] as string,
+                UPLOAD_FILE_REQUEST_METADATA,
+              ),
+              eqMessage({ fileName: "file1" }, UPLOAD_FILE_REQUEST_METADATA),
+              "request side",
+            );
+            assertThat(req.body, eq("hahahah, random stuff"), "request body");
+            res.end(
+              serializeMessage(
+                { byteSize: 10, success: true },
+                UPLOAD_FILE_RESPONSE,
+              ),
+            );
+          },
+        );
 
         // Execute
         await executeInPuppeteerAndAssertSuccess("test_data/upload_file_test");
